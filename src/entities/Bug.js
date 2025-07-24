@@ -1,4 +1,5 @@
 /* src/entities/Bug.js */
+import XPGem from "./XPGem.js";
 export default class Bug {
   constructor(x, y, sprite, width = 32) {
     this.x = x;
@@ -12,7 +13,6 @@ export default class Bug {
     this.hp = 5;
     this.contactDamage = 1;
 
-    // ** Nouveaux champs **
     this.contactCooldown = 1.0; // 1 seconde entre deux contacts
     this.contactTimer = 0; // compte à rebours initial
   }
@@ -36,5 +36,15 @@ export default class Bug {
   }
   render(ctx) {
     ctx.drawImage(this.sprite, this.x, this.y, this.width, this.height);
+  }
+
+  /**
+   * À appeler après la mort (hp <= 0) pour créer une gemme d'XP.
+   * @param {HTMLImageElement} xpSprite
+   * @param {number} amount
+   * @returns {XPGem}
+   */
+  dropXpGem(xpSprite, amount = 1) {
+    return new XPGem(this.x, this.y, xpSprite, 32, amount);
   }
 }

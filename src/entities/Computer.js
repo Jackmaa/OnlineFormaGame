@@ -13,6 +13,7 @@ export default class Computer {
     this.width = width;
     this.height = (width / sprite.width) * sprite.height;
     this.isPurified = false;
+    this.isPurifying = false;
   }
 
   render(ctx) {

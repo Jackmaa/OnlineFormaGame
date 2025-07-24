@@ -14,10 +14,11 @@ const input = new Input(canvas);
 
 loader
   .loadAssets({
-    player: "assets/sprites/lucile.png",
+    player: "assets/sprites/vincent.png",
     enemy: "assets/sprites/bug_glitch.png",
     weapon: "assets/sprites/sword.png",
     computer: "assets/sprites/computer.png",
+    xpGem: "assets/sprites/xp_gem.png",
     tileset: "assets/tilesets/tiles.png",
   })
   .then((assets) => {

@@ -4,6 +4,7 @@ import Bug from "../entities/Bug.js";
 import Weapon from "../entities/Weapon.js";
 import TileMap from "../engine/TileMap.js";
 import Computer from "../entities/Computer.js";
+import Quiz from "../Quiz.js";
 import UI from "../UI.js";
 
 export default class GameScene {
@@ -18,6 +19,7 @@ export default class GameScene {
     this.items = [];
     this.computer = null;
     this.UI = null;
+    this._purifyHandled = false;
   }
 
   create() {
@@ -33,12 +35,48 @@ export default class GameScene {
       assets.computer,
       64
     );
+
+    // Liste de questions
+    const questions = [
+      {
+        q: "Que signifie SQL ?",
+        choices: [
+          "Simple Query Language",
+          "Structured Query Language",
+          "Server Quality List",
+        ],
+        correct: 1,
+      },
+      {
+        q: "404 est un code HTTP pour…",
+        choices: ["Succès", "Introuvable", "Erreur serveur"],
+        correct: 1,
+      },
+      // ajoute autant de questions que tu veux…
+    ];
+    this.quiz = new Quiz(questions, (success) => {
+      if (success) {
+        this.computer.isPurified = true;
+      } else {
+        this.computer.isPurified = false;
+        for (let i = 0; i < 8; i++) {
+          const x = Math.random() * (this.game.canvas.width - 32);
+          const y = Math.random() * (this.game.canvas.height - 32);
+          this.enemies.push(new Bug(x, y, assets.enemy, 32));
+        }
+      }
+    });
+
     // Spawn 8 bugs
     for (let i = 0; i < 8; i++) {
       const x = Math.random() * (this.game.canvas.width - 32);
       const y = Math.random() * (this.game.canvas.height - 32);
       this.enemies.push(new Bug(x, y, assets.enemy, 32));
     }
+
+    //spawn XPGems
+    this.xpSprite = this.game.assets.xpGem;
+    this.xpGems = [];
 
     // Spawn a weapon item
     const swordData = { name: "Sword", dps: 10, ability: "Slash", range: 40 };
@@ -112,20 +150,39 @@ export default class GameScene {
     }
 
     // Remove dead
+    const deadEnemies = this.enemies.filter((e) => e.hp <= 0);
+    if (deadEnemies.length) {
+      deadEnemies.forEach((e) => {
+        const gem = e.dropXpGem(this.xpSprite);
+        if (gem) {
+          this.xpGems.push(gem);
+        }
+      });
+    }
     this.enemies = this.enemies.filter((e) => e.hp > 0);
-
     // Dès que tous les bugs sont morts, on passe en mode "prêt à purifier"
     if (!this.purified && this.enemies.length === 0) {
       this.purified = true;
     }
 
+    // Mettre à jour et filtrer les gemmes collectées
+    this.xpGems.forEach((g) => g.update(dt, this.player));
+    this.xpGems = this.xpGems.filter((g) => !g.collected);
+
     // Si prêt et que le joueur entre en collision avec l'ordi + touche E
+    // 1) Déclenchement du quiz au lieu de startPurification directe
     if (
       this.purified &&
+      !this.computer.isPurifying &&
+      !this.computer.isPurified &&
       this.checkCollision(this.player, this.computer) &&
       input.isDown("e")
     ) {
-      this.computer.isPurified = true;
+      this.quiz.show();
+    }
+
+    // 3) Une fois purifié, n’appeler onPurify() qu’une seule fois
+    if (this.computer.isPurified && !this._purifyHandled) {
       this.onPurify();
     }
 
@@ -186,6 +243,8 @@ export default class GameScene {
     this.enemies.forEach((e) => e.render(ctx));
     // Player
     this.player.render(ctx, this.game.input);
+    // XPGems
+    this.xpGems.forEach((g) => g.render(ctx));
   }
 
   onPurify() {
