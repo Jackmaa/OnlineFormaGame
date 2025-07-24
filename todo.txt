@@ -1,7 +1,0 @@
-Ennemi	Visuel & Thème	Emplacement	Comportement clé
-Bug Glitch	Un petit blob vert-jaune pixélisé, plein de “pixels qui clignotent”	Herbe (0)	Random‑walk, réagit en “bégayant” quand il touche un obstacle, fait perdre un peu de hp (bug bite)
-Error 404 Phantom	Fantôme blanc‑gris avec un « 404 » flottant au‑dessus	Plage de sable (3)	Flotte de haut en bas, traverse murs, disparaît / réapparaît en tourbillonnant, inflige confusion (contrôles inversés)
-SQL Worm	Ver orange‑rouge tordu comme une chaîne de caractères	Bord de l’eau (2)	Rampe en ligne droite, peut passer sous l’eau, ralentit le joueur au contact, spawne des “injections” (petits projectiles)
-Comment Troll	Figure masquée, bulle de texte avec “// LOL”	Dans les grottes / rochers (4)	Stationnaire, envoie périodiquement des flèches “commentaires” (projectiles) sur le joueur si à portée
-Spam Bot	Boîtier robotique bleu‑clair avec un œil rouge clignotant	Partout (zone générale)	Se déplace vite, repère le joueur à distance (télescopage), se démultiplie en deux bots plus petits à la mort
-Adware Fiend (Boss)	Grande créature quadrupède avec un écran pop‑up sur le dos	Au centre de la carte, zone boss	Phase 1 : charge lente + projectiles pop‑up ; phase 2 (hp <50%) : spawn d’Ads (petits ennemis) et téléportation rapide

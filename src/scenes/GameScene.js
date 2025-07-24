@@ -4,6 +4,7 @@ import Bug from "../entities/Bug.js";
 import Weapon from "../entities/Weapon.js";
 import TileMap from "../engine/TileMap.js";
 import Computer from "../entities/Computer.js";
+import UI from "../UI.js";
 
 export default class GameScene {
   constructor(mapArray, ts, tileset) {
@@ -16,6 +17,7 @@ export default class GameScene {
     this.enemies = [];
     this.items = [];
     this.computer = null;
+    this.UI = null;
   }
 
   create() {
@@ -41,6 +43,14 @@ export default class GameScene {
     // Spawn a weapon item
     const swordData = { name: "Sword", dps: 10, ability: "Slash", range: 40 };
     this.items.push(new Weapon(300, 300, assets.weapon, 48, swordData));
+
+    // UI overlay
+    this.UI = new UI({
+      gameCanvas: this.game.canvas,
+      player: this.player,
+      width: this.game.canvas.width,
+      height: this.game.canvas.height,
+    });
   }
 
   update(dt) {
@@ -159,6 +169,9 @@ export default class GameScene {
 
     // FPS
     if (dt > 0) this.game.fps = 1 / dt;
+
+    // UI
+    this.UI.update(dt);
   }
 
   render(ctx) {
@@ -172,15 +185,8 @@ export default class GameScene {
     this.enemies.forEach((e) => e.render(ctx));
     // Player
     this.player.render(ctx, this.game.input);
-
-    // HUD
-    ctx.fillStyle = "white";
-    ctx.font = "16px Arial";
-    ctx.fillText(`HP: ${this.player.hp}`, 10, 20);
-    if (this.purified && !this.computer.isPurified) {
-      ctx.fillStyle = "yellow";
-      ctx.fillText("Approche-toi et appuie sur E pour purifier", 10, 70);
-    }
+    // UI
+    this.UI.render(ctx);
   }
 
   onPurify() {

@@ -1,0 +1,244 @@
+1. Pitch du jeu
+
+Titre (temporaire) : Debug & Destroy
+
+Genre : Action/Survival en 2D top‑down
+Ambiance : Mélange de rétro pixel art et de glitch numérique, avec une touche d’humour noir
+Plateforme cible : Web (desktop), jouable au clavier/souris et manette
+
+Résumé du concept :
+Vous incarnez un programmeur piégé dans un monde corrompu où des bugs et virus animés sèment la terreur. Explorez un jardin modulé en zones pixelisées, éliminez les ennemis issus d’erreurs de code et récupérez des fragments de données pour restaurer la stabilité du système.
+
+2. Mécaniques principales
+
+2.1 Déplacement & caméra
+
+Vue top‑down fixe centrée sur le joueur.
+
+Déplacement en 8 directions (clavier/zqsd ou sticks).
+
+Inertie légère pour un ressenti fluide.
+
+2.2 Combat
+
+Attaque de base : coup d’outil (swipe) à distance réduite
+
+Points de vie (HP) : barre de vie affichée à l’écran
+
+Dégâts : chaque attaque retire un nombre fixe de HP aux ennemis
+
+Cooldown : temps de recharge minimal entre deux attaques
+
+2.3 Système d’XP & progression
+
+Ennemi tué → XP
+
+À seuils d’XP, level up → choix de 2 améliorations (vitesse, portée, dégâts, soin)
+
+Barre d’XP et niveau affichés en permanence
+
+2.4 Spawn d’ennemis
+
+Zones définies (0–4) avec types spécifiques
+
+Respawn périodique tous les 20s (paramétrable)
+
+3. Flow de gameplay
+
+Exploration : traversez la zone principale (jardin) pour découvrir les points de spawn.
+
+Combat : affrontez les ennemis qui apparaissent, gérez vos PV et votre cooldown.
+
+Loot & XP : récupérez de l’XP et des fragments de données drop par certains ennemis.
+
+Level up : améliorez vos compétences entre chaque vague.
+
+Boss fight : atteignez le centre de la carte pour défier l’Adware Fiend.
+
+Loop : retournez explorer avec votre build renforcé pour nettoyer la zone suivante.
+
+4. Détail des ennemis
+
+Ennemi
+
+Visuel & Thème
+
+Emplacement
+
+Comportement clé
+
+HP
+
+XP récomp.
+
+Drops
+
+Bug Glitch
+
+Blob pixélisé vert‑jaune avec pixels clignotants
+
+Herbe (0)
+
+Random‑walk, réagit en bégayant aux collisions, inflige de faibles dégâts au contact
+
+3
+
+5
+
+Fragment de code
+
+Error 404 Phantom
+
+Fantôme blanc‑gris, «404» flottant
+
+Plage de sable (3)
+
+Flotte vertical, ignore murs, disappear/reappear en tourbillon, confond le joueur
+
+5
+
+10
+
+Orbe de confusion
+
+SQL Worm
+
+Ver orange‑rouge en forme de chaîne de caractères
+
+Bord de l’eau (2)
+
+Rampe en ligne droite, traverse l’eau, ralentit le joueur, tire des injections
+
+4
+
+8
+
+Injection de données
+
+Comment Troll
+
+Figure masquée, bulle “// LOL”
+
+Grottes / rochers (4)
+
+Stationnaire, envoie périodiquement des projectiles à distance
+
+6
+
+12
+
+Fragment de troll
+
+Spam Bot
+
+Boîtier robotique bleu‑clair avec œil rouge
+
+Zone générale
+
+Se déplace rapidement, repère le joueur de loin, se divise en deux à la mort
+
+8
+
+15
+
+Pièces mécaniques
+
+Boss Adware Fiend
+
+Grande créature quadrupède avec écran pop‑up sur le dos
+
+Centre de la carte (boss)
+
+Phase 1 : charges lentes + projectiles pop‑up; Phase 2 (HP<50%) spawn d’Ads et téléportation rapide
+
+50
+
+100
+
+Clé de debug (Clé de zone suivante)
+
+5. Liste d’assets
+
+5.1 Graphismes
+
+Sprites personnages : joueur (idle, walk, attack)
+
+Sprites ennemis : 5 types + boss variations de phases
+
+Tilesets : herbe, sable, roche, eau
+
+Éffets particules : impact, projectiles, tourbillon
+
+UI : barre de vie, XP, menus, pop‑ups
+
+5.2 Audio
+
+Musique : thème principal, loop zones, boss
+
+SFX : pas, attaques, hits, spawns, level up, téléportation
+
+5.3 Autres
+
+JSON tilemaps pour chaque zone
+
+Config ennemis (HP, comportement) en JSON
+
+Polices pixel art lisibles
+
+6. UI & Menus
+
+6.1 HUD en jeu
+
+Barre de vie (en haut à gauche)
+
+Barre d’XP & niveau (en bas)
+
+Minimap réduite montrant zone et points d’intérêt (optionnel)
+
+6.2 Menus
+
+Menu principal : Jouer, Options, Quitter
+
+Pause : Reprendre, Options, Menu principal
+
+Écran de fin : Score, Stats (ennemis tués, temps), Rejouer
+
+Options : Volume, Contrôles, Affichage
+
+7. Roadmap & Milestones
+
+Milestone
+
+Objectifs principaux
+
+Échéance
+
+Vertical Slice
+
+Prototyper déplacement, combat, 2 ennemis, HUD minimal
+
+2 semaines
+
+MVP
+
+Ajout de toutes mécaniques de base + 5 ennemis + boss
+
+1 mois
+
+Alpha
+
+UI complète, son, 2 zones, système d’XP, menu
+
+2 mois
+
+Beta
+
+Polish, optimisation, équilibrage, tests
+
+3 mois
+
+Release Candidate
+
+Debug final, build web, marketing de base
+
+4 mois
