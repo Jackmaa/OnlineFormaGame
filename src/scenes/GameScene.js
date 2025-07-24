@@ -91,7 +91,7 @@ export default class GameScene {
       );
       // Damage on contact avec cooldown
       if (this.checkCollision(this.player, enemy) && enemy.contactTimer <= 0) {
-        this.player.hp -= enemy.contactDamage;
+        this.player.setHp(this.player.hp - enemy.contactDamage);
         enemy.contactTimer = enemy.contactCooldown;
       }
     }
@@ -176,7 +176,8 @@ export default class GameScene {
 
   render(ctx) {
     this.tileMap.render(ctx);
-
+    // UI
+    this.UI.render(ctx);
     // Computer
     this.computer.render(ctx);
     // Items
@@ -185,8 +186,6 @@ export default class GameScene {
     this.enemies.forEach((e) => e.render(ctx));
     // Player
     this.player.render(ctx, this.game.input);
-    // UI
-    this.UI.render(ctx);
   }
 
   onPurify() {

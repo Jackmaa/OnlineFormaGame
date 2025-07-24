@@ -22,8 +22,8 @@ loader
   })
   .then((assets) => {
     const game = new Game({ canvas, ctx, assets, input });
-    const cols = Math.floor(canvas.width / 32);
-    const rows = Math.floor(canvas.height / 32);
+    const cols = Math.ceil(canvas.width / 32);
+    const rows = Math.ceil(canvas.height / 32);
     const simpleMap = generateRandomMap(cols, rows);
     // On passe map + tileset à la scène
     const gameScene = new GameScene(simpleMap, 32, assets.tileset);
