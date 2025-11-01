@@ -238,4 +238,3 @@ Développé avec ❤️ en JavaScript vanilla
 
 </div>
 Si vous utilisez les artworks de ce projet, merci de créditer @Mel00w.
-```
