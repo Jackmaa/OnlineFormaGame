@@ -163,7 +163,7 @@ Ahlem, Cédric, Christelle, Fabien, Illias, Le V, Lionel, Lucile, Marc, Mathieu,
 
 - Améliorations : Choisissez de nouvelles compétences à chaque niveau
 
--Vagues : Système de vagues d'ennemis de plus en plus difficiles
+- Vagues : Système de vagues d'ennemis de plus en plus difficiles
 
 ### Gestion des ennemis
 
