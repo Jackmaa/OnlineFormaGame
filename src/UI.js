@@ -2,10 +2,10 @@
 export default class UI {
   /**
    * @param {object} options
-   * @param {HTMLCanvasElement} options.gameCanvas — le canvas du jeu
-   * @param {Player} options.player — instance de ton Player
-   * @param {number} options.width — largeur du canvas
-   * @param {number} options.height — hauteur du canvas
+   * @param {HTMLCanvasElement} options.gameCanvas â€” le canvas du jeu
+   * @param {Player} options.player â€” instance de ton Player
+   * @param {number} options.width â€” largeur du canvas
+   * @param {number} options.height â€” hauteur du canvas
    */
   constructor({ gameCanvas, player, width, height }) {
     this.canvas = gameCanvas;
@@ -40,8 +40,8 @@ export default class UI {
   }
 
   /**
-   * À appeler chaque frame avant le render()
-   * pour décrémenter le timer de cooldown.
+   * Ã€ appeler chaque frame avant le render()
+   * pour dÃ©crÃ©menter le timer de cooldown.
    */
   update(dt) {
     if (this.cooldownTimer > 0) {
@@ -74,7 +74,7 @@ export default class UI {
     ctx.font = "14px Arial";
     ctx.fillText(`HP: ${this.hp}/${this.maxHp}`, x0 + 5, y0 + 14);
 
-    // 2. Barre d’XP
+    // 2. Barre dâ€™XP
     const y1 = y0 + barH + 6;
     const xpRatio = Math.min(this.xp / this.xpForNext, 1);
     ctx.fillStyle = "black";
@@ -84,7 +84,7 @@ export default class UI {
     ctx.fillStyle = "white";
     ctx.fillText(`XP: ${this.xp}/${this.xpForNext}`, x0 + 5, y1 + 14);
 
-    // 3. Cooldown radial (en haut à droite)
+    // 3. Cooldown radial (en haut Ã  droite)
     const cx = this.width - 50,
       cy = 50,
       r = 20;

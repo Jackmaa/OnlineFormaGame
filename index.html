@@ -1,28 +1,55 @@
-<!--index.html-->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>2D RPG Game</title>
+    <title>Code Survivors - 2D Vampire Survivors Clone</title>
     <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
       body {
         margin: 0;
         overflow: hidden;
-        background-color: #000;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-family: 'Arial', sans-serif;
       }
-      canvas {
+
+      #game-canvas {
         display: block;
-        margin: 0 auto;
+        margin: 20px auto;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
         background-color: #222;
       }
-      #game-canvas {
-        border: 1px solid #fff;
+
+      .game-container {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      
+      .loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 24px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
       }
     </style>
   </head>
   <body>
-    <canvas id="game-canvas" width="800" height="600"></canvas>
+    <div class="game-container">
+      <canvas id="game-canvas" width="800" height="600"></canvas>
+      <div class="loading" id="loading">Chargement...</div>
+    </div>
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>

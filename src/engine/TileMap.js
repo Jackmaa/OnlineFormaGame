@@ -2,9 +2,9 @@
 
 export default class TileMap {
   /**
-   * @param {number[][]} mapArray   Tableau 2D d’IDs (1, 2, …)
+   * @param {number[][]} mapArray   Tableau 2D dâ€™IDs (1, 2, â€¦)
    * @param {number}     tileSize   Taille (px) de chaque tuile
-   * @param {HTMLImageElement} tileset  Image tileset (chargée via AssetLoader)
+   * @param {HTMLImageElement} tileset  Image tileset (chargÃ©e via AssetLoader)
    */
   constructor(mapArray, tileSize, tileset) {
     this.map = mapArray;
