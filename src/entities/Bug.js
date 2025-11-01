@@ -14,11 +14,11 @@ export default class Bug {
     this.contactDamage = 1;
 
     this.contactCooldown = 1.0; // 1 seconde entre deux contacts
-    this.contactTimer = 0; // compte à rebours initial
+    this.contactTimer = 0; // compte Ã  rebours initial
   }
 
   update(dt, player) {
-    // déjà existant : mouvement aléatoire
+    // dÃ©jÃ  existant : mouvement alÃ©atoire
     this.timer -= dt;
     if (this.timer <= 0) {
       this.timer = 0.5 + Math.random();
@@ -29,7 +29,7 @@ export default class Bug {
     this.x += this.dir.x * this.speed * dt;
     this.y += this.dir.y * this.speed * dt;
 
-    // ** décrémente le timer de contact **
+    // ** dÃ©crÃ©mente le timer de contact **
     if (this.contactTimer > 0) {
       this.contactTimer -= dt;
     }
@@ -39,7 +39,7 @@ export default class Bug {
   }
 
   /**
-   * À appeler après la mort (hp <= 0) pour créer une gemme d'XP.
+   * Ã€ appeler aprÃ¨s la mort (hp <= 0) pour crÃ©er une gemme d'XP.
    * @param {HTMLImageElement} xpSprite
    * @param {number} amount
    * @returns {XPGem}

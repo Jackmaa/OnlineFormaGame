@@ -1,11 +1,14 @@
-/* src/scenes/GameScene.js */
+// src/scenes/GameScene.js
 import Player from "../entities/Player.js";
 import Bug from "../entities/Bug.js";
-import Weapon from "../entities/Weapon.js";
 import TileMap from "../engine/TileMap.js";
-import Computer from "../entities/Computer.js";
-import Quiz from "../Quiz.js";
+import XPGem from "../entities/XPGem.js";
 import UI from "../UI.js";
+import WaveManager from "../systems/WaveManager.js";
+import Sword from "../weapons/Sword.js";
+import OrbitalWeapon from "../weapons/OrbitalWeapon.js";
+import ProjectileWeapon from "../weapons/ProjectileWeapon.js";
+import LevelUpSystem from "../systems/LevelUpSystem.js";
 
 export default class GameScene {
   constructor(mapArray, ts, tileset) {
@@ -15,72 +18,51 @@ export default class GameScene {
   init() {
     this.tileMap = null;
     this.player = null;
-    this.enemies = [];
-    this.items = [];
-    this.computer = null;
+    this.waveManager = null;
+    this.xpGems = [];
     this.UI = null;
-    this._purifyHandled = false;
+    this.levelUpSystem = null;
+    this.gameTime = 0;
+    this.paused = false;
   }
 
   create() {
     const { assets } = this.game;
     this.tileMap = new TileMap(this.mapArray, this.ts, this.tileset);
 
-    // Player
-    this.player = new Player(100, 100, assets.player, 64);
-    // Place l'ordinateur au centre
-    this.computer = new Computer(
-      this.game.canvas.width / 2 - 64 / 2,
-      this.game.canvas.height / 2 - 64 / 2,
-      assets.computer,
-      64
+    // Get selected character
+    const characterId = this.game.selectedCharacter || "vincent";
+
+    // Get character sprite
+    const characterSprite =
+      this.game.characterSprites[characterId] ||
+      assets[characterId] ||
+      assets.vincent;
+
+    // Create player with character
+    this.player = new Player(
+      this.game.canvas.width / 2 - 32,
+      this.game.canvas.height / 2 - 32,
+      characterSprite,
+      64,
+      characterId
     );
 
-    // Liste de questions
-    const questions = [
-      {
-        q: "Que signifie SQL ?",
-        choices: [
-          "Simple Query Language",
-          "Structured Query Language",
-          "Server Quality List",
-        ],
-        correct: 1,
-      },
-      {
-        q: "404 est un code HTTP pour…",
-        choices: ["Succès", "Introuvable", "Erreur serveur"],
-        correct: 1,
-      },
-      // ajoute autant de questions que tu veux…
-    ];
-    this.quiz = new Quiz(questions, (success) => {
-      if (success) {
-        this.computer.isPurified = true;
-      } else {
-        this.computer.isPurified = false;
-        for (let i = 0; i < 8; i++) {
-          const x = Math.random() * (this.game.canvas.width - 32);
-          const y = Math.random() * (this.game.canvas.height - 32);
-          this.enemies.push(new Bug(x, y, assets.enemy, 32));
-        }
-      }
-    });
+    // Setup level up callback
+    this.player.onLevelUp = (level) => {
+      this.levelUpSystem.show();
+      this.paused = true;
+    };
 
-    // Spawn 8 bugs
-    for (let i = 0; i < 8; i++) {
-      const x = Math.random() * (this.game.canvas.width - 32);
-      const y = Math.random() * (this.game.canvas.height - 32);
-      this.enemies.push(new Bug(x, y, assets.enemy, 32));
-    }
+    // Wave Manager
+    this.game.Bug = Bug; // Pass Bug class
+    this.waveManager = new WaveManager(this.game, assets.enemy);
 
-    //spawn XPGems
-    this.xpSprite = this.game.assets.xpGem;
-    this.xpGems = [];
-
-    // Spawn a weapon item
-    const swordData = { name: "Sword", dps: 10, ability: "Slash", range: 40 };
-    this.items.push(new Weapon(300, 300, assets.weapon, 48, swordData));
+    // XP Gem sprite
+    this.xpSprite = assets.xpGem;
+    // Add starting weapon (Sword with slash)
+    const sword = new Sword(this.player, assets.weapon);
+    this.player.addWeapon(sword);
 
     // UI overlay
     this.UI = new UI({
@@ -89,13 +71,29 @@ export default class GameScene {
       width: this.game.canvas.width,
       height: this.game.canvas.height,
     });
+
+    // Level up system
+    this.levelUpSystem = new LevelUpSystem(this.game, this.player);
+
+    // Override hide to unpause
+    const originalHide = this.levelUpSystem.hide.bind(this.levelUpSystem);
+    this.levelUpSystem.hide = () => {
+      originalHide();
+      this.paused = false;
+    };
   }
 
   update(dt) {
+    if (this.paused) return;
+
+    this.gameTime += dt;
+    this.game.gameTime = this.gameTime; // Make available to wave manager
+
     const input = this.game.input;
 
     // Player movement
     this.player.update(dt, input);
+
     // Clamp player in canvas
     this.player.x = Math.max(
       0,
@@ -106,18 +104,21 @@ export default class GameScene {
       Math.min(this.player.y, this.game.canvas.height - this.player.height)
     );
 
-    // Pickup items
-    for (let i = this.items.length - 1; i >= 0; i--) {
-      const item = this.items[i];
-      if (this.checkCollision(this.player, item)) {
-        this.player.equip(item);
-        this.items.splice(i, 1);
+    // Wave Manager
+    this.waveManager.update(dt);
+    const enemies = this.waveManager.getEnemies();
+
+    // Mettre à jour la liste des ennemis pour les armes (ciblage automatique)
+    for (const weapon of this.player.weapons) {
+      if (weapon.setEnemies) {
+        weapon.setEnemies(enemies);
       }
     }
 
     // Update enemies
-    for (const enemy of this.enemies) {
+    for (const enemy of enemies) {
       enemy.update(dt, this.player);
+
       // Clamp enemy in canvas
       enemy.x = Math.max(
         0,
@@ -127,101 +128,66 @@ export default class GameScene {
         0,
         Math.min(enemy.y, this.game.canvas.height - enemy.height)
       );
-      // Damage on contact avec cooldown
+
+      // Contact damage
       if (this.checkCollision(this.player, enemy) && enemy.contactTimer <= 0) {
-        this.player.setHp(this.player.hp - enemy.contactDamage);
-        enemy.contactTimer = enemy.contactCooldown;
+        if (this.player.takeDamage(enemy.contactDamage)) {
+          enemy.contactTimer = enemy.contactCooldown;
+        }
+      }
+    }
+
+    // Weapon collision with enemies
+    for (const weapon of this.player.weapons) {
+      const hitboxes = weapon.getHitboxes();
+
+      for (const hitbox of hitboxes) {
+        for (const enemy of enemies) {
+          if (this.checkCollision(hitbox, enemy)) {
+            let damage = hitbox.damage * this.player.damageMultiplier;
+
+            // Boss damage multiplier
+            if (enemy.isBoss) {
+              damage *= this.player.bossDamageMultiplier;
+            }
+
+            // Critical hit
+            if (Math.random() < this.player.critChance) {
+              damage *= 1.5;
+            }
+
+            enemy.hp -= damage;
+          }
+        }
+      }
+    }
+
+    // Remove dead enemies and drop XP
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      const enemy = enemies[i];
+      if (enemy.hp <= 0) {
+        const xpAmount = enemy.isBoss ? 50 : 5;
+        const gem = new XPGem(
+          enemy.x + enemy.width / 2,
+          enemy.y + enemy.height / 2,
+          this.xpSprite,
+          enemy.isBoss ? 48 : 32,
+          xpAmount
+        );
+        this.xpGems.push(gem);
+        this.waveManager.removeEnemy(enemy);
       }
     }
 
-    if (this.player.isAttacking && !this.player.didHit) {
-      const w = this.player.equippedWeapon;
-      for (const enemy of this.enemies) {
-        if (this.checkCollision(w, enemy)) {
-          enemy.hp -= this.player.damagePerHit;
-        }
-      }
-      this.player.didHit = true;
+    // Update XP gems
+    for (const gem of this.xpGems) {
+      gem.update(dt, this.player);
     }
-
-    // Réinitialisation pour le prochain swing
-    if (!this.player.isAttacking && this.player.didHit) {
-      this.player.didHit = false;
-    }
-
-    // Remove dead
-    const deadEnemies = this.enemies.filter((e) => e.hp <= 0);
-    if (deadEnemies.length) {
-      deadEnemies.forEach((e) => {
-        const gem = e.dropXpGem(this.xpSprite);
-        if (gem) {
-          this.xpGems.push(gem);
-        }
-      });
-    }
-    this.enemies = this.enemies.filter((e) => e.hp > 0);
-    // Dès que tous les bugs sont morts, on passe en mode "prêt à purifier"
-    if (!this.purified && this.enemies.length === 0) {
-      this.purified = true;
-    }
-
-    // Mettre à jour et filtrer les gemmes collectées
-    this.xpGems.forEach((g) => g.update(dt, this.player));
     this.xpGems = this.xpGems.filter((g) => !g.collected);
 
-    // Si prêt et que le joueur entre en collision avec l'ordi + touche E
-    // 1) Déclenchement du quiz au lieu de startPurification directe
-    if (
-      this.purified &&
-      !this.computer.isPurifying &&
-      !this.computer.isPurified &&
-      this.checkCollision(this.player, this.computer) &&
-      input.isDown("e")
-    ) {
-      this.quiz.show();
-    }
-
-    // 3) Une fois purifié, n’appeler onPurify() qu’une seule fois
-    if (this.computer.isPurified && !this._purifyHandled) {
-      this.onPurify();
-    }
-
-    if (
-      input.isMouseDown() &&
-      this.player.equippedWeapon &&
-      !this.player.isAttacking &&
-      this.player.cooldownTimer <= 0
-    ) {
-      this.player.isAttacking = true;
-      this.player.attackTimer = this.player.attackDuration;
-      this.player.cooldownTimer =
-        this.player.attackCooldown + this.player.attackDuration;
-      this.player.didHit = false;
-    }
-
-    // 2) Pendant le swing, tester la hitbox de l’arme
-    if (this.player.isAttacking && !this.player.didHit) {
-      const w = this.player.equippedWeapon;
-      this.enemies.forEach((enemy) => {
-        if (this.checkCollision(w, enemy)) {
-          enemy.hp -= this.player.damagePerHit;
-        }
-      });
-      this.player.didHit = true;
-    }
-    if (!this.player.isAttacking && this.player.didHit) {
-      this.player.didHit = false;
-    }
-
-    if (this.player.equippedWeapon) {
-      const w = this.player.equippedWeapon;
-      const dps = w.weaponData.dps;
-      this.enemies.forEach((enemy) => {
-        if (this.checkCollision(w, enemy)) {
-          // inflige des dégâts proportionnels au temps écoulé
-          enemy.hp -= (dps / 60) * dt; // 60 FPSs
-        }
-      });
+    // Check death
+    if (this.player.hp <= 0) {
+      this.gameOver();
     }
 
     // FPS
@@ -232,23 +198,91 @@ export default class GameScene {
   }
 
   render(ctx) {
+    // Background
     this.tileMap.render(ctx);
-    // UI
-    this.UI.render(ctx);
-    // Computer
-    this.computer.render(ctx);
-    // Items
-    this.items.forEach((i) => i.render(ctx));
+
+    // XP Gems
+    this.xpGems.forEach((g) => g.render(ctx));
+
     // Enemies
-    this.enemies.forEach((e) => e.render(ctx));
+    const enemies = this.waveManager.getEnemies();
+    enemies.forEach((e) => e.render(ctx));
+
     // Player
     this.player.render(ctx, this.game.input);
-    // XPGems
-    this.xpGems.forEach((g) => g.render(ctx));
+
+    // UI
+    this.UI.render(ctx);
+
+    // Timer
+    ctx.save();
+    ctx.fillStyle = "white";
+    ctx.font = "bold 24px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      this.formatTime(this.gameTime),
+      this.game.canvas.width / 2,
+      30
+    );
+
+    // Enemy count
+    ctx.font = "16px Arial";
+    ctx.fillText(`Enemies: ${enemies.length}`, this.game.canvas.width / 2, 55);
+    ctx.restore();
   }
 
-  onPurify() {
-    console.log("Ordinateur purifié !");
+  formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  }
+
+  gameOver() {
+    // Create game over screen
+    const overlay = document.createElement("div");
+    Object.assign(overlay.style, {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      background: "rgba(0,0,0,0.9)",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      color: "white",
+      fontFamily: "Arial",
+      zIndex: 3000,
+    });
+
+    overlay.innerHTML = `
+      <h1 style="font-size:72px;margin:0;color:#e53e3e;">GAME OVER</h1>
+      <p style="font-size:36px;margin:20px 0;">Time Survived: ${this.formatTime(
+        this.gameTime
+      )}</p>
+      <p style="font-size:24px;opacity:0.8;">Level: ${this.player.level}</p>
+      <button id="restart-btn" style="
+        font-size:28px;
+        padding:20px 60px;
+        background:#48bb78;
+        color:white;
+        border:none;
+        border-radius:10px;
+        cursor:pointer;
+        margin-top:40px;
+        font-weight:bold;
+      ">RESTART</button>
+    `;
+
+    document.body.appendChild(overlay);
+
+    document.getElementById("restart-btn").onclick = () => {
+      document.body.removeChild(overlay);
+      location.reload();
+    };
+
+    this.paused = true;
   }
 
   checkCollision(a, b) {
@@ -261,7 +295,7 @@ export default class GameScene {
   }
 }
 
-/* Générateur de carte aléatoire */
+// Map generator
 export function generateRandomMap(cols, rows) {
   const map = [];
   for (let y = 0; y < rows; y++) {

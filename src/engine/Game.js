@@ -12,13 +12,13 @@ export default class Game {
   }
 
   startLoop() {
-    // Initialisation pour éviter dt=0 au premier frame
+    // Initialisation pour Ã©viter dt=0 au premier frame
     this.lastTime = performance.now();
     requestAnimationFrame(this.loop.bind(this));
   }
 
   loop(time) {
-    // Calcul correct de dt (>0 dès le premier frame)
+    // Calcul correct de dt (>0 dÃ¨s le premier frame)
     const dt = (time - this.lastTime) / 1000;
     this.lastTime = time;
 

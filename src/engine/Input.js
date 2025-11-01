@@ -20,7 +20,7 @@ export default class Input {
     });
 
     canvas.addEventListener("mousemove", (e) => {
-      // coordonnées relatives au canvas
+      // coordonnÃ©es relatives au canvas
       const rect = canvas.getBoundingClientRect();
       this.mouseX = e.clientX - rect.left;
       this.mouseY = e.clientY - rect.top;
