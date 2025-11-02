@@ -1,4 +1,5 @@
 // src/systems/LevelUpSystem.js
+
 import PowerUpRegistry from "../powerups/PowerUpRegistry.js";
 
 export default class LevelUpSystem {
@@ -6,9 +7,7 @@ export default class LevelUpSystem {
     this.game = game;
     this.player = player;
     this.isPaused = false;
-    // ⚠️ CORRECTION : Créer une INSTANCE au lieu d'assigner la classe
     this.registry = new PowerUpRegistry();
-
     this.createUI();
   }
 
@@ -46,7 +45,6 @@ export default class LevelUpSystem {
     this.isPaused = true;
     this.container.style.display = "flex";
 
-    // ⚠️ CORRECTION : Utiliser getRandomPowerUps qui existe vraiment
     // Récupérer les IDs des power-ups au max level
     const excludeIds = [];
     this.registry.getAll().forEach((pu) => {
@@ -55,8 +53,17 @@ export default class LevelUpSystem {
       }
     });
 
-    // Obtenir 3 power-ups aléatoires
-    const choices = this.registry.getRandomPowerUps(3, excludeIds);
+    // ✨ NOUVEAU : Obtenir 3 power-ups avec rareté selon la chance du joueur
+    const luckMultiplier = this.player.luckMultiplier || 1.0;
+    console.log(
+      `\n🎲 Roll de power-ups (Chance: ${luckMultiplier.toFixed(2)}x)`
+    );
+
+    const choices = this.registry.getRandomPowerUps(
+      3,
+      excludeIds,
+      luckMultiplier
+    );
 
     // Afficher les choix
     this.choicesEl.innerHTML = "";
@@ -66,65 +73,158 @@ export default class LevelUpSystem {
     });
   }
 
-  createPowerUpCard(powerUp) {
+  /**
+   * ✨ NOUVEAU : Créer une carte de power-up avec sa rareté
+   */
+  createPowerUpCard(rarePowerUp) {
     const card = document.createElement("div");
+    const rarity = rarePowerUp.rarity;
 
-    // Couleur selon le type de power-up (basé sur l'ID)
-    let gradient;
-    const offensiveIds = ["damage", "cooldown", "area", "projectile"];
-    const defensiveIds = ["maxhp", "heal", "regen"];
-    const utilityIds = ["speed", "xpboost", "magnet"];
-
-    if (offensiveIds.includes(powerUp.id)) {
-      gradient = "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)";
-    } else if (defensiveIds.includes(powerUp.id)) {
-      gradient = "linear-gradient(135deg, #3498db 0%, #2980b9 100%)";
-    } else if (utilityIds.includes(powerUp.id)) {
-      gradient = "linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)";
-    } else {
-      gradient = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
-    }
+    // Gradient basé sur la rareté
+    const gradient = `linear-gradient(135deg, ${rarity.color} 0%, ${rarity.glowColor} 100%)`;
 
     Object.assign(card.style, {
       background: gradient,
       padding: "30px",
       borderRadius: "15px",
       cursor: "pointer",
-      minWidth: "220px",
+      minWidth: "240px",
       textAlign: "center",
       transition: "transform 0.2s, box-shadow 0.2s",
-      border: "3px solid rgba(255,255,255,0.2)",
+      border: `3px solid ${rarity.color}`,
+      boxShadow: `0 0 20px ${rarity.glowColor}`,
+      position: "relative",
+      overflow: "hidden",
     });
 
-    // ⚠️ CORRECTION : Utiliser les propriétés qui existent vraiment
-    const nextLevel = powerUp.currentLevel + 1;
+    // Animation de particules pour les rangs élevés
+    if (rarity.id === "legendary" || rarity.id === "mythic") {
+      this.addParticleEffect(card, rarity);
+    }
 
-    card.innerHTML = `
-      <div style="font-size:64px;margin-bottom:15px;">${powerUp.icon}</div>
-      <div style="font-size:20px;font-weight:bold;text-shadow:1px 1px 2px #000;margin-bottom:8px;">
-        ${powerUp.name}
-      </div>
-      <div style="font-size:14px;opacity:0.9;text-shadow:1px 1px 2px #000;margin-bottom:10px;">
-        ${powerUp.description}
-      </div>
-      <div style="font-size:12px;opacity:0.7;text-shadow:1px 1px 2px #000;border-top:1px solid rgba(255,255,255,0.3);padding-top:10px;">
-        Niveau: ${powerUp.currentLevel} → ${nextLevel}
-      </div>
-    `;
+    // Badge de rareté
+    const badge = document.createElement("div");
+    badge.textContent = `${rarity.icon} ${rarity.name}`;
+    Object.assign(badge.style, {
+      fontSize: "14px",
+      fontWeight: "bold",
+      color: "#fff",
+      background: "rgba(0,0,0,0.5)",
+      padding: "5px 10px",
+      borderRadius: "20px",
+      marginBottom: "10px",
+      textTransform: "uppercase",
+      letterSpacing: "1px",
+    });
+    card.appendChild(badge);
 
+    // Icône du power-up
+    const icon = document.createElement("div");
+    icon.textContent = rarePowerUp.icon;
+    Object.assign(icon.style, {
+      fontSize: "64px",
+      marginBottom: "15px",
+      filter: "drop-shadow(0 0 10px rgba(255,255,255,0.5))",
+    });
+    card.appendChild(icon);
+
+    // Nom
+    const name = document.createElement("div");
+    name.textContent = rarePowerUp.name;
+    Object.assign(name.style, {
+      fontSize: "22px",
+      fontWeight: "bold",
+      textShadow: "2px 2px 4px #000",
+      marginBottom: "8px",
+    });
+    card.appendChild(name);
+
+    // Description avec multiplicateur
+    const desc = document.createElement("div");
+    desc.textContent = rarePowerUp.description;
+    Object.assign(desc.style, {
+      fontSize: "14px",
+      opacity: "0.95",
+      textShadow: "1px 1px 2px #000",
+      marginBottom: "10px",
+      lineHeight: "1.4",
+    });
+    card.appendChild(desc);
+
+    // Multiplicateur visible si > 1.0
+    if (rarity.multiplier > 1.0) {
+      const multBadge = document.createElement("div");
+      multBadge.textContent = `×${rarity.multiplier.toFixed(1)} PUISSANCE`;
+      Object.assign(multBadge.style, {
+        fontSize: "16px",
+        fontWeight: "bold",
+        color: "#FFD700",
+        textShadow: "0 0 10px #FFD700",
+        marginTop: "10px",
+        animation: "pulse 1s infinite",
+      });
+      card.appendChild(multBadge);
+    }
+
+    // Niveau actuel
+    const nextLevel = rarePowerUp.currentLevel + 1;
+    const levelText = document.createElement("div");
+    levelText.textContent = `Niveau: ${rarePowerUp.currentLevel} → ${nextLevel}`;
+    Object.assign(levelText.style, {
+      fontSize: "12px",
+      opacity: "0.8",
+      textShadow: "1px 1px 2px #000",
+      borderTop: "1px solid rgba(255,255,255,0.3)",
+      paddingTop: "10px",
+      marginTop: "10px",
+    });
+    card.appendChild(levelText);
+
+    // Animations hover
     card.onmouseenter = () => {
-      card.style.transform = "scale(1.1)";
-      card.style.boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
+      card.style.transform = "scale(1.05) translateY(-5px)";
+      card.style.boxShadow = `0 15px 40px ${rarity.glowColor}`;
     };
 
     card.onmouseleave = () => {
       card.style.transform = "scale(1)";
-      card.style.boxShadow = "none";
+      card.style.boxShadow = `0 0 20px ${rarity.glowColor}`;
     };
 
-    card.onclick = () => this.selectPowerUp(powerUp);
+    card.onclick = () => this.selectPowerUp(rarePowerUp);
 
     return card;
+  }
+
+  /**
+   * ✨ Ajouter un effet de particules pour les rangs élevés
+   */
+  addParticleEffect(card, rarity) {
+    // Animation CSS pour les particules
+    const style = document.createElement("style");
+    style.textContent = `
+      @keyframes sparkle {
+        0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+        50% { opacity: 1; transform: scale(1) rotate(180deg); }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Créer des particules
+    for (let i = 0; i < 5; i++) {
+      const particle = document.createElement("div");
+      particle.textContent = "✨";
+      Object.assign(particle.style, {
+        position: "absolute",
+        fontSize: "20px",
+        top: `${Math.random() * 100}%`,
+        left: `${Math.random() * 100}%`,
+        animation: `sparkle ${2 + Math.random()}s infinite`,
+        animationDelay: `${Math.random() * 2}s`,
+        pointerEvents: "none",
+      });
+      card.appendChild(particle);
+    }
   }
 
   hide() {
@@ -132,28 +232,30 @@ export default class LevelUpSystem {
     this.container.style.display = "none";
   }
 
-  selectPowerUp(powerUp) {
-    // ⚠️ CORRECTION : Utiliser levelUp() qui existe vraiment
-    const success = powerUp.levelUp(this.player);
+  selectPowerUp(rarePowerUp) {
+    // Appliquer l'effet avec le multiplicateur de rareté
+    const success = rarePowerUp.levelUp(this.player);
 
     if (success) {
+      const rarity = rarePowerUp.rarity;
       console.log(
-        `✅ Power-up ${powerUp.name} appliqué ! Niveau ${powerUp.currentLevel}`
+        `✅ ${rarity.icon} ${rarePowerUp.name} (${rarity.name}) appliqué ! ` +
+          `Multiplicateur: ×${rarity.multiplier} | Niveau ${rarePowerUp.currentLevel}`
       );
 
-      // Sauvegarder dans le joueur si besoin
+      // Sauvegarder dans le joueur
       if (!this.player.powerUps) {
         this.player.powerUps = [];
       }
 
-      const existing = this.player.powerUps.find((p) => p.id === powerUp.id);
+      const existing = this.player.powerUps.find(
+        (p) => p.id === rarePowerUp.id
+      );
       if (!existing) {
-        this.player.powerUps.push(powerUp);
+        this.player.powerUps.push(rarePowerUp);
       }
     } else {
-      console.warn(
-        `⚠️ Impossible d'améliorer ${powerUp.name} (niveau max atteint)`
-      );
+      console.warn(`⚠️ Impossible d'améliorer ${rarePowerUp.name}`);
     }
 
     this.hide();
