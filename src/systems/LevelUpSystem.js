@@ -243,16 +243,17 @@ export default class LevelUpSystem {
           `Multiplicateur: ×${rarity.multiplier} | Niveau ${rarePowerUp.currentLevel}`
       );
 
-      // Sauvegarder dans le joueur
+      // Sauvegarder dans le joueur (sauvegarder le power-up de base depuis le registre)
       if (!this.player.powerUps) {
         this.player.powerUps = [];
       }
 
+      const basePowerUp = this.registry.get(rarePowerUp.id);
       const existing = this.player.powerUps.find(
-        (p) => p.id === rarePowerUp.id
+        (p) => p.id === basePowerUp.id
       );
       if (!existing) {
-        this.player.powerUps.push(rarePowerUp);
+        this.player.powerUps.push(basePowerUp);
       }
     } else {
       console.warn(`⚠️ Impossible d'améliorer ${rarePowerUp.name}`);

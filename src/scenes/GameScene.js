@@ -6,11 +6,10 @@ import XPGem from "../entities/XPGem.js";
 import UI from "../UI.js";
 import WaveManager from "../systems/WaveManager.js";
 import Sword from "../weapons/Sword.js";
-import Boomerang from "../weapons/Boomerang.js"; // ✨ NOUVEAU
 import OrbitalWeapon from "../weapons/OrbitalWeapon.js";
 import ProjectileWeapon from "../weapons/ProjectileWeapon.js";
 import LevelUpSystem from "../systems/LevelUpSystem.js";
-import { getCharacter } from "../data/Characters.js"; // ✨ NOUVEAU
+import { getCharacter } from "../data/Characters.js";
 
 export default class GameScene {
   constructor(mapArray, ts, tileset) {
@@ -34,7 +33,6 @@ export default class GameScene {
 
     // Get selected character
     const characterId = this.game.selectedCharacter || "vincent";
-    const characterData = getCharacter(characterId); // ✨ NOUVEAU
 
     // Get character sprite
     const characterSprite =
@@ -64,14 +62,14 @@ export default class GameScene {
     // XP Gem sprite
     this.xpSprite = assets.xpGem;
 
-    // ✨ NOUVEAU : Donner l'arme de départ selon le personnage
-    const startWeapon = this.getStartingWeapon(
+    // Add starting weapon based on character
+    const characterData = getCharacter(characterId);
+    const startWeapon = this.createWeapon(
       characterData.startWeapon,
-      assets
+      this.player,
+      assets.weapon
     );
-    if (startWeapon) {
-      this.player.addWeapon(startWeapon);
-    }
+    this.player.addWeapon(startWeapon);
 
     // UI overlay
     this.UI = new UI({
@@ -93,30 +91,25 @@ export default class GameScene {
   }
 
   /**
-   * ✨ NOUVEAU : Crée l'arme de départ selon le type
-   * @param {string} weaponType - Type d'arme (sword, boomerang, orbital, projectile)
-   * @param {object} assets - Assets du jeu
+   * Crée une arme en fonction de son type
+   * @param {string} weaponType - Type d'arme (sword, orbital, projectile)
+   * @param {Player} player - Joueur
+   * @param {Image} sprite - Sprite de l'arme
    * @returns {BaseWeapon} L'arme créée
    */
-  getStartingWeapon(weaponType, assets) {
+  createWeapon(weaponType, player, sprite) {
     switch (weaponType) {
       case "sword":
-        return new Sword(this.player, assets.weapon);
-
-      case "boomerang":
-        return new Boomerang(this.player, assets.weapon);
-
+        return new Sword(player, sprite);
       case "orbital":
-        return new OrbitalWeapon(this.player, assets.weapon);
-
+        return new OrbitalWeapon(player, sprite);
       case "projectile":
-        return new ProjectileWeapon(this.player, assets.weapon);
-
+        return new ProjectileWeapon(player, sprite);
       default:
         console.warn(
-          `Arme inconnue: ${weaponType}, utilisation de l'épée par défaut`
+          `Type d'arme inconnu: ${weaponType}, utilisation de l'épée par défaut`
         );
-        return new Sword(this.player, assets.weapon);
+        return new Sword(player, sprite);
     }
   }
 
@@ -145,7 +138,7 @@ export default class GameScene {
     this.waveManager.update(dt);
     const enemies = this.waveManager.getEnemies();
 
-    // Mettre à jour la liste des ennemis pour les armes (ciblage automatique)
+    // Mettre Ã  jour la liste des ennemis pour les armes (ciblage automatique)
     for (const weapon of this.player.weapons) {
       if (weapon.setEnemies) {
         weapon.setEnemies(enemies);
@@ -194,6 +187,19 @@ export default class GameScene {
             }
 
             enemy.hp -= damage;
+
+            // Gestion du pierce pour les projectiles
+            if (hitbox.projectile) {
+              const proj = hitbox.projectile;
+
+              // Si le projectile a du pierce, décrémenter
+              if (proj.pierceRemaining > 0) {
+                proj.pierceRemaining--;
+              } else {
+                // Sinon, marquer pour suppression
+                proj.toRemove = true;
+              }
+            }
           }
         }
       }
