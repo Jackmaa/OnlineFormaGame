@@ -174,31 +174,80 @@ export default class GameScene {
       for (const hitbox of hitboxes) {
         for (const enemy of enemies) {
           if (this.checkCollision(hitbox, enemy)) {
-            let damage = hitbox.damage * this.player.damageMultiplier;
-
-            // Boss damage multiplier
-            if (enemy.isBoss) {
-              damage *= this.player.bossDamageMultiplier;
-            }
-
-            // Critical hit
-            if (Math.random() < this.player.critChance) {
-              damage *= 1.5;
-            }
-
-            enemy.hp -= damage;
-
-            // Gestion du pierce pour les projectiles
+            // Gestion spéciale pour les projectiles
             if (hitbox.projectile) {
               const proj = hitbox.projectile;
 
-              // Si le projectile a du pierce, décrémenter
+              // ✅ Vérifier si CET ennemi a déjà été touché par CET projectile
+              // Chaque projectile a son propre hitEnemies Set, donc chaque projectile
+              // peut toucher indépendamment les mêmes ennemis que d'autres projectiles
+              if (proj.hitEnemies && proj.hitEnemies.has(enemy)) {
+                // Cet ennemi a déjà été touché par ce projectile spécifique (via ricochet ou pierce)
+                // Skip cet ennemi pour ce projectile uniquement
+                continue;
+              }
+
+              // ✅ PRIORITÉ 1 : Si ricochet restant > 0 ET hasRicochet activé pour CE projectile
+              // ProjectileWeapon.update() gère les collisions avec ricochet au début de chaque frame
+              // Si l'ennemi n'est pas encore dans hitEnemies, cela signifie que ProjectileWeapon
+              // va gérer cette collision au prochain frame (ou l'a déjà gérée cette frame)
+              // On skip ici pour laisser ProjectileWeapon.update() gérer le ricochet
+              // et éviter d'appliquer les dégâts deux fois
+              if (proj.ricochetRemaining > 0 && this.player.hasRicochet) {
+                // Le ricochet sera géré dans ProjectileWeapon.update() (appelé dans player.update())
+                // Skip cette collision pour éviter les doubles dégâts
+                // Note: Chaque projectile est traité indépendamment, donc les projectiles sans
+                // ricochet (ricochetRemaining = 0) continueront normalement ci-dessous
+                continue;
+              }
+
+              // Si on arrive ici, c'est que :
+              // - Cet ennemi n'a PAS été touché par ce projectile (pas dans hitEnemies)
+              // - Ce projectile n'a PAS de ricochet actif (ricochetRemaining = 0)
+              // Donc on gère normalement avec le pierce
+
+              // ✅ PRIORITÉ 2 : Si ricochet = 0 pour CE projectile, alors utiliser le pierce
+              // Appliquer les dégâts normalement
+              let damage = hitbox.damage * this.player.damageMultiplier;
+
+              // Boss damage multiplier
+              if (enemy.isBoss) {
+                damage *= this.player.bossDamageMultiplier;
+              }
+
+              // Critical hit
+              if (Math.random() < this.player.critChance) {
+                damage *= 1.5;
+              }
+
+              enemy.hp -= damage;
+
+              // Marquer l'ennemi comme touché par ce projectile pour éviter les doubles hits
+              if (!proj.hitEnemies) proj.hitEnemies = new Set();
+              proj.hitEnemies.add(enemy);
+
+              // Gérer le pierce
               if (proj.pierceRemaining > 0) {
                 proj.pierceRemaining--;
               } else {
-                // Sinon, marquer pour suppression
+                // Sinon, marquer pour suppression (seulement si ricochet aussi à 0)
                 proj.toRemove = true;
               }
+            } else {
+              // ✅ Pour les armes non-projectiles (épée, orbitales, etc.), appliquer les dégâts normalement
+              let damage = hitbox.damage * this.player.damageMultiplier;
+
+              // Boss damage multiplier
+              if (enemy.isBoss) {
+                damage *= this.player.bossDamageMultiplier;
+              }
+
+              // Critical hit
+              if (Math.random() < this.player.critChance) {
+                damage *= 1.5;
+              }
+
+              enemy.hp -= damage;
             }
           }
         }
