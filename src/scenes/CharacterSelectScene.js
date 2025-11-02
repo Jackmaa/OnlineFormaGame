@@ -1,4 +1,4 @@
-import { getCharacterList } from "../data/Characters.js";
+import { getAllCharacters } from "../data/Characters.js";
 
 export default class CharacterSelectScene {
   constructor(game) {
@@ -58,7 +58,7 @@ export default class CharacterSelectScene {
       marginBottom: "30px",
     });
 
-    const characters = getCharacterList();
+    const characters = getAllCharacters();
     characters.forEach((char) => {
       const card = this.createCharacterCard(char);
       grid.appendChild(card);

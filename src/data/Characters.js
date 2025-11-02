@@ -24,7 +24,7 @@ export const CHARACTERS = {
     name: "Ahlem",
     sprite: "ahlem.png",
     description: "Vitesse - Rapide et agile",
-    startWeapon: "dagger",
+    startWeapon: "boomerang", // 🪃 Boomerang rapide
     stats: {
       maxHp: 80,
       speed: 180,
@@ -38,7 +38,7 @@ export const CHARACTERS = {
     name: "Cédric",
     sprite: "cedric.png",
     description: "Tank - Résistant aux dégâts",
-    startWeapon: "hammer",
+    startWeapon: "orbital", // 🛡️ Protection orbitale
     stats: {
       maxHp: 150,
       speed: 120,
@@ -52,7 +52,7 @@ export const CHARACTERS = {
     name: "Christelle",
     sprite: "christelle.png",
     description: "Attaque rapide - Cooldowns réduits",
-    startWeapon: "boomerang",
+    startWeapon: "projectile", // 🎯 Tirs rapides
     stats: {
       maxHp: 90,
       speed: 150,
@@ -66,7 +66,7 @@ export const CHARACTERS = {
     name: "Fabien",
     sprite: "fabien.png",
     description: "XP Boost - +30% XP gagnée",
-    startWeapon: "book",
+    startWeapon: "orbital", // 📚 Orbes de savoir
     stats: {
       maxHp: 100,
       speed: 150,
@@ -80,7 +80,7 @@ export const CHARACTERS = {
     name: "Illias",
     sprite: "illias.png",
     description: "Portée - +40% taille des armes",
-    startWeapon: "spear",
+    startWeapon: "sword", // 🗡️ Lance longue portée
     stats: {
       maxHp: 90,
       speed: 145,
@@ -95,7 +95,7 @@ export const CHARACTERS = {
     name: "LeV",
     sprite: "leV.png",
     description: "Critique - +25% dégâts critiques",
-    startWeapon: "katana",
+    startWeapon: "sword", // ⚔️ Katana critique
     stats: {
       maxHp: 85,
       speed: 150,
@@ -110,7 +110,7 @@ export const CHARACTERS = {
     name: "Lionel",
     sprite: "lionel.png",
     description: "Régénération - +1 HP par seconde",
-    startWeapon: "staff",
+    startWeapon: "orbital", // 🌟 Aura de guérison
     stats: {
       maxHp: 120,
       speed: 135,
@@ -125,7 +125,7 @@ export const CHARACTERS = {
     name: "Lucile",
     sprite: "lucile.png",
     description: "Multi-projectiles - +1 projectile de base",
-    startWeapon: "orb",
+    startWeapon: "projectile", // 🎨 Orbes multiples
     stats: {
       maxHp: 95,
       speed: 155,
@@ -140,7 +140,7 @@ export const CHARACTERS = {
     name: "Marc",
     sprite: "marc.png",
     description: "Zone d'effet - +30% zone",
-    startWeapon: "axe",
+    startWeapon: "sword", // 🪓 Hache zone
     stats: {
       maxHp: 100,
       speed: 145,
@@ -155,7 +155,7 @@ export const CHARACTERS = {
     name: "Mathieu",
     sprite: "mathieu.png",
     description: "Dégâts - +25% dégâts",
-    startWeapon: "greatsword",
+    startWeapon: "sword", // ⚔️ Grande épée
     stats: {
       maxHp: 90,
       speed: 150,
@@ -169,7 +169,7 @@ export const CHARACTERS = {
     name: "Sabah",
     sprite: "sabah.png",
     description: "Magnétisme - +50% portée XP",
-    startWeapon: "whip",
+    startWeapon: "boomerang", // 🪃 Fouet magnétique
     stats: {
       maxHp: 100,
       speed: 150,
@@ -184,7 +184,7 @@ export const CHARACTERS = {
     name: "Samy",
     sprite: "samy.png",
     description: "Esquive - +10% vitesse et esquive",
-    startWeapon: "fan",
+    startWeapon: "boomerang", // 🪭 Éventail agile
     stats: {
       maxHp: 85,
       speed: 165,
@@ -199,7 +199,7 @@ export const CHARACTERS = {
     name: "Serge",
     sprite: "serge.png",
     description: "Boss Killer - +50% dégâts vs Boss",
-    startWeapon: "crossbow",
+    startWeapon: "projectile", // 🏹 Arbalète
     stats: {
       maxHp: 110,
       speed: 145,
@@ -214,7 +214,7 @@ export const CHARACTERS = {
     name: "Thomas",
     sprite: "thomas.png",
     description: "Croissance - Stats +5% par niveau",
-    startWeapon: "wand",
+    startWeapon: "orbital", // 🪄 Baguette magique
     stats: {
       maxHp: 80,
       speed: 150,
@@ -229,7 +229,7 @@ export const CHARACTERS = {
     name: "Valentin",
     sprite: "valentin.png",
     description: "Chance - +20% meilleurs drops",
-    startWeapon: "dice",
+    startWeapon: "projectile", // 🎲 Dés de chance
     stats: {
       maxHp: 100,
       speed: 150,

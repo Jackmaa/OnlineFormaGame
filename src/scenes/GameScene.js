@@ -6,9 +6,11 @@ import XPGem from "../entities/XPGem.js";
 import UI from "../UI.js";
 import WaveManager from "../systems/WaveManager.js";
 import Sword from "../weapons/Sword.js";
+import Boomerang from "../weapons/Boomerang.js"; // ✨ NOUVEAU
 import OrbitalWeapon from "../weapons/OrbitalWeapon.js";
 import ProjectileWeapon from "../weapons/ProjectileWeapon.js";
 import LevelUpSystem from "../systems/LevelUpSystem.js";
+import { getCharacter } from "../data/Characters.js"; // ✨ NOUVEAU
 
 export default class GameScene {
   constructor(mapArray, ts, tileset) {
@@ -32,6 +34,7 @@ export default class GameScene {
 
     // Get selected character
     const characterId = this.game.selectedCharacter || "vincent";
+    const characterData = getCharacter(characterId); // ✨ NOUVEAU
 
     // Get character sprite
     const characterSprite =
@@ -60,9 +63,15 @@ export default class GameScene {
 
     // XP Gem sprite
     this.xpSprite = assets.xpGem;
-    // Add starting weapon (Sword with slash)
-    const sword = new Sword(this.player, assets.weapon);
-    this.player.addWeapon(sword);
+
+    // ✨ NOUVEAU : Donner l'arme de départ selon le personnage
+    const startWeapon = this.getStartingWeapon(
+      characterData.startWeapon,
+      assets
+    );
+    if (startWeapon) {
+      this.player.addWeapon(startWeapon);
+    }
 
     // UI overlay
     this.UI = new UI({
@@ -81,6 +90,34 @@ export default class GameScene {
       originalHide();
       this.paused = false;
     };
+  }
+
+  /**
+   * ✨ NOUVEAU : Crée l'arme de départ selon le type
+   * @param {string} weaponType - Type d'arme (sword, boomerang, orbital, projectile)
+   * @param {object} assets - Assets du jeu
+   * @returns {BaseWeapon} L'arme créée
+   */
+  getStartingWeapon(weaponType, assets) {
+    switch (weaponType) {
+      case "sword":
+        return new Sword(this.player, assets.weapon);
+
+      case "boomerang":
+        return new Boomerang(this.player, assets.weapon);
+
+      case "orbital":
+        return new OrbitalWeapon(this.player, assets.weapon);
+
+      case "projectile":
+        return new ProjectileWeapon(this.player, assets.weapon);
+
+      default:
+        console.warn(
+          `Arme inconnue: ${weaponType}, utilisation de l'épée par défaut`
+        );
+        return new Sword(this.player, assets.weapon);
+    }
   }
 
   update(dt) {
