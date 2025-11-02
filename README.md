@@ -36,6 +36,17 @@ OnlineFormaGame est un jeu éducatif interactif en JavaScript qui combine mécan
 - **CSS3** - Styles et interface
 - **Node.js** - Environnement de développement
 
+## 📚 Documentation
+
+Une documentation complète est disponible dans le dossier `docs/` pour vous aider à ajouter du contenu au jeu :
+
+- 📖 [Guide Complet](./docs/00_INDEX.md) - Index de toute la documentation
+- ⚔️ [Ajouter une arme](./docs/01_AJOUTER_UNE_ARME.md) - Créer et intégrer une nouvelle arme
+- 👾 [Ajouter un ennemi](./docs/02_AJOUTER_UN_ENNEMI.md) - Créer de nouveaux types d'ennemis
+- ⭐ [Ajouter un power-up](./docs/03_AJOUTER_UN_POWERUP.md) - Créer de nouveaux power-ups
+- 🎨 [Ajouter des sprites](./docs/04_AJOUTER_DES_SPRITES.md) - Gérer les ressources graphiques
+- 👤 [Ajouter un personnage](./docs/05_AJOUTER_UN_PERSONNAGE.md) - Créer un nouveau personnage jouable
+
 ## 📦 Installation et Démarrage
 
 ### Prérequis
