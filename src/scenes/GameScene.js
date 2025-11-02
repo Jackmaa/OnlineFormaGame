@@ -3,11 +3,15 @@ import Player from "../entities/Player.js";
 import Bug from "../entities/Bug.js";
 import TileMap from "../engine/TileMap.js";
 import XPGem from "../entities/XPGem.js";
+import WeaponDrop from "../entities/WeaponDrop.js";
+import DropEffect from "../effects/DropEffect.js";
 import UI from "../UI.js";
 import WaveManager from "../systems/WaveManager.js";
 import Sword from "../weapons/Sword.js";
 import OrbitalWeapon from "../weapons/OrbitalWeapon.js";
 import ProjectileWeapon from "../weapons/ProjectileWeapon.js";
+import GuidedMissile from "../weapons/GuidedMissile.js";
+import LaserWeapon from "../weapons/LaserWeapon.js";
 import LevelUpSystem from "../systems/LevelUpSystem.js";
 import { getCharacter } from "../data/Characters.js";
 
@@ -21,6 +25,8 @@ export default class GameScene {
     this.player = null;
     this.waveManager = null;
     this.xpGems = [];
+    this.weaponDrops = []; // ✅ Armes légendaires droppées
+    this.dropEffects = []; // ✅ Effets visuels de drop
     this.UI = null;
     this.levelUpSystem = null;
     this.gameTime = 0;
@@ -105,6 +111,10 @@ export default class GameScene {
         return new OrbitalWeapon(player, sprite);
       case "projectile":
         return new ProjectileWeapon(player, sprite);
+      case "guidedMissile":
+        return new GuidedMissile(player, sprite);
+      case "laser":
+        return new LaserWeapon(player, sprite);
       default:
         console.warn(
           `Type d'arme inconnu: ${weaponType}, utilisation de l'épée par défaut`
@@ -174,6 +184,47 @@ export default class GameScene {
       for (const hitbox of hitboxes) {
         for (const enemy of enemies) {
           if (this.checkCollision(hitbox, enemy)) {
+            // ✅ Gestion spéciale pour les lasers (ricochet)
+            if (hitbox.laser && hitbox.laserData) {
+              const laserData = hitbox.laserData;
+
+              // Vérifier si cet ennemi a déjà été touché par ce laser (ricochet)
+              if (laserData.hitEnemies && laserData.hitEnemies.has(enemy)) {
+                // Déjà touché, skip
+                continue;
+              }
+
+              // Appliquer les dégâts
+              let damage = hitbox.damage * this.player.damageMultiplier;
+
+              if (enemy.isBoss) {
+                damage *= this.player.bossDamageMultiplier;
+              }
+
+              if (Math.random() < this.player.critChance) {
+                damage *= 1.5;
+              }
+
+              enemy.hp -= damage;
+
+              // ✅ Gérer le ricochet pour le laser
+              if (laserData.ricochetRemaining > 0 && this.player.hasRicochet) {
+                // Marquer l'ennemi comme touché
+                if (!laserData.hitEnemies) laserData.hitEnemies = new Set();
+                laserData.hitEnemies.add(enemy);
+                laserData.ricochetRemaining--;
+
+                // La cible sera mise à jour dans LaserWeapon.updateTargets()
+                // qui cherchera le prochain ennemi non touché
+              } else {
+                // Pas de ricochet, marquer quand même pour éviter les doubles hits
+                if (!laserData.hitEnemies) laserData.hitEnemies = new Set();
+                laserData.hitEnemies.add(enemy);
+              }
+
+              continue;
+            }
+
             // Gestion spéciale pour les projectiles
             if (hitbox.projectile) {
               const proj = hitbox.projectile;
@@ -272,10 +323,56 @@ export default class GameScene {
     }
 
     // Update XP gems
+    const collectedGemsPositions = [];
     for (const gem of this.xpGems) {
+      const wasCollected = gem.collected;
       gem.update(dt, this.player);
+
+      // ✅ Si une gemme vient d'être collectée cette frame, noter sa position pour le drop
+      if (!wasCollected && gem.collected) {
+        collectedGemsPositions.push({
+          x: gem.x + gem.width / 2,
+          y: gem.y + gem.height / 2,
+        });
+      }
     }
+
+    // ✅ Filtrer les gemmes collectées
     this.xpGems = this.xpGems.filter((g) => !g.collected);
+
+    // ✅ Essayer de dropper une arme légendaire pour chaque gemme collectée
+    for (const pos of collectedGemsPositions) {
+      this.tryDropLegendaryWeapon(pos.x, pos.y);
+    }
+
+    // ✅ Update weapon drops
+    for (const weaponDrop of this.weaponDrops) {
+      const collected = weaponDrop.update(dt, this.player);
+      if (collected) {
+        // Créer et équiper l'arme
+        const weapon = this.createWeapon(
+          weaponDrop.weaponType,
+          this.player,
+          this.game.assets.weapon
+        );
+        this.player.addWeapon(weapon);
+
+        // ✅ Initialiser l'arme si elle a besoin de setEnemies
+        const enemies = this.waveManager.getEnemies();
+        if (weapon.setEnemies) {
+          weapon.setEnemies(enemies);
+        }
+
+        console.log(`🎁 Arme légendaire collectée: ${weaponDrop.weaponType}`);
+      }
+    }
+    this.weaponDrops = this.weaponDrops.filter((w) => !w.collected);
+
+    // ✅ Update drop effects
+    for (const effect of this.dropEffects) {
+      effect.update(dt);
+    }
+    this.dropEffects = this.dropEffects.filter((e) => !e.isFinished());
 
     // Check death
     if (this.player.hp <= 0) {
@@ -295,6 +392,12 @@ export default class GameScene {
 
     // XP Gems
     this.xpGems.forEach((g) => g.render(ctx));
+
+    // ✅ Weapon Drops (armes légendaires)
+    this.weaponDrops.forEach((w) => w.render(ctx));
+
+    // ✅ Drop Effects (effets visuels)
+    this.dropEffects.forEach((e) => e.render(ctx));
 
     // Enemies
     const enemies = this.waveManager.getEnemies();
@@ -384,6 +487,47 @@ export default class GameScene {
       a.y < b.y + b.height &&
       a.y + a.height > b.y
     );
+  }
+
+  /**
+   * ✅ Essaie de dropper une arme légendaire avec 5% de chance (modifiée par luckMultiplier)
+   * @param {number} x - Position X où dropper l'arme
+   * @param {number} y - Position Y où dropper l'arme
+   */
+  tryDropLegendaryWeapon(x, y) {
+    // Chance de base : 5% (0.05)
+    const baseChance = 0.05;
+
+    // Modifier par luckMultiplier (1.0 = normal, 2.0 = double chance)
+    const luckMultiplier = this.player.luckMultiplier || 1.0;
+    const finalChance = baseChance * luckMultiplier;
+
+    // Roll
+    if (Math.random() < finalChance) {
+      // Choisir aléatoirement entre les deux armes légendaires
+      const legendaryWeapons = ["laser", "guidedMissile"];
+      const randomWeapon =
+        legendaryWeapons[Math.floor(Math.random() * legendaryWeapons.length)];
+
+      const weaponDrop = new WeaponDrop(
+        x,
+        y,
+        randomWeapon,
+        this.game.assets.weapon
+      );
+
+      this.weaponDrops.push(weaponDrop);
+
+      // ✅ Créer l'effet visuel de drop (explosion de particules)
+      const dropEffect = new DropEffect(x, y);
+      this.dropEffects.push(dropEffect);
+
+      console.log(
+        `✨ Arme légendaire droppée: ${randomWeapon} (Chance: ${(
+          finalChance * 100
+        ).toFixed(2)}%)`
+      );
+    }
   }
 }
 
