@@ -95,13 +95,13 @@ class ProjectilePowerUp extends PowerUp {
       name: "Projectiles +",
       description: "Ajoute 1 projectile",
       icon: "🎯",
-      maxLevel: 3,
+      maxLevel: 10,
     });
   }
 
   apply(player) {
-    if (!player.projectileCount) player.projectileCount = 1;
-    player.projectileCount++;
+    if (!player.projectileBonus) player.projectileBonus = 0;
+    player.projectileBonus += 1;
   }
 }
 

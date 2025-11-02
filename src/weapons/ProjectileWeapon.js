@@ -38,21 +38,39 @@ export default class ProjectileWeapon extends BaseWeapon {
       proj.y += proj.vy * dt;
       proj.distance += Math.hypot(proj.vx * dt, proj.vy * dt);
 
-      // Vérifier les collisions avec les ennemis pour le ricochet
+      // ✅ PRIORITÉ 1 : Vérifier le ricochet en premier
+      // Si ricochet > 0, on gère la collision et les dégâts ici
       if (proj.ricochetRemaining > 0 && this.player.hasRicochet) {
         for (const enemy of this.enemies) {
           if (
             !proj.hitEnemies.has(enemy) &&
             this.checkProjectileCollision(proj, enemy)
           ) {
-            // Marquer l'ennemi comme touché
+            // ✅ Appliquer les dégâts lors du ricochet
+            let damage = proj.damage;
+
+            // Boss damage multiplier
+            if (enemy.isBoss && this.player.bossDamageMultiplier) {
+              damage *= this.player.bossDamageMultiplier;
+            }
+
+            // Critical hit
+            if (Math.random() < (this.player.critChance || 0)) {
+              damage *= 1.5;
+            }
+
+            enemy.hp -= damage;
+
+            // Marquer l'ennemi comme touché (pour éviter de le retoucher)
             proj.hitEnemies.add(enemy);
+
+            // Décrémenter le ricochet
             proj.ricochetRemaining--;
 
             // Trouver la prochaine cible pour le ricochet
             const nextTarget = this.findNextRicochetTarget(proj);
 
-            if (nextTarget && proj.ricochetRemaining > 0) {
+            if (nextTarget && proj.ricochetRemaining >= 0) {
               // Changer la direction vers la nouvelle cible
               const dx = nextTarget.x + nextTarget.width / 2 - proj.x;
               const dy = nextTarget.y + nextTarget.height / 2 - proj.y;
@@ -71,6 +89,10 @@ export default class ProjectileWeapon extends BaseWeapon {
         }
       }
 
+      // ✅ PRIORITÉ 2 : Si pas de ricochet (ou ricochet terminé), vérifier le pierce
+      // Le pierce sera géré dans GameScene lors de la collision réelle
+      // On ne fait rien ici, juste garder l'info que pierceRemaining est disponible
+
       // Retirer si hors de portée
       if (
         proj.distance >
@@ -78,8 +100,9 @@ export default class ProjectileWeapon extends BaseWeapon {
       ) {
         this.projectiles.splice(i, 1);
       }
-      // Retirer si marqué pour suppression
-      else if (proj.toRemove) {
+      // ✅ Ne PAS supprimer si ricochetRemaining > 0 (même si marqué toRemove)
+      // Retirer si marqué pour suppression ET pas de ricochet restant
+      else if (proj.toRemove && proj.ricochetRemaining <= 0) {
         this.projectiles.splice(i, 1);
       }
     }
