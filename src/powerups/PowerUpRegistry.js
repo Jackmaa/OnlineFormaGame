@@ -1,6 +1,5 @@
 // src/powerups/PowerUpRegistry.js
-
-import { rollRarity, RarePowerUp, debugDropRates } from "./RaritySystem.js";
+import { RarePowerUp, rollRarity } from "./RaritySystem.js";
 
 /**
  * Classe de base pour tous les power-ups
@@ -10,14 +9,13 @@ class PowerUp {
     this.id = config.id;
     this.name = config.name;
     this.description = config.description;
-    this.icon = config.icon || "⭐";
+    this.icon = config.icon || "â­";
     this.maxLevel = config.maxLevel || 5;
     this.currentLevel = 0;
-    this.multiplier = 1.0; // Multiplicateur interne pour la rareté
   }
 
   apply(player) {
-    throw new Error("apply() doit être implémenté");
+    throw new Error("apply() doit Ãªtre implÃ©mentÃ©");
   }
 
   levelUp(player) {
@@ -46,17 +44,12 @@ class DamagePowerUp extends PowerUp {
       icon: "⚔️",
       maxLevel: 5,
     });
-    this.baseValue = 0.2; // Valeur de base
   }
 
   apply(player) {
-    const value = this.baseValue * this.multiplier;
-    player.damageMultiplier += value;
-    console.log(
-      `✅ Dégâts augmentés de +${(value * 100).toFixed(
-        0
-      )}% ! Total: ${player.damageMultiplier.toFixed(2)}x`
-    );
+    if (!player.damageBonus) player.damageBonus = 1;
+    player.damageBonus += 0.2;
+    player.damageMultiplier = player.damageBonus;
   }
 }
 
@@ -66,22 +59,14 @@ class CooldownPowerUp extends PowerUp {
       id: "cooldown",
       name: "Attaque rapide",
       description: "Réduit le cooldown de 15%",
-      icon: "⚡",
+      icon: "⏰",
       maxLevel: 5,
     });
-    this.baseValue = 0.15; // Valeur de base
   }
 
   apply(player) {
-    const value = this.baseValue * this.multiplier;
-    // Pour le cooldown, on réduit : multiplier par (1 - value)
-    const reductionFactor = 1 - Math.min(value, 0.9); // Max 90% de réduction
-    player.cooldownMultiplier *= reductionFactor;
-    console.log(
-      `✅ Cooldown réduit de ${(value * 100).toFixed(
-        0
-      )}% ! Total: ${player.cooldownMultiplier.toFixed(2)}x`
-    );
+    if (!player.cooldownBonus) player.cooldownBonus = 0;
+    player.cooldownBonus += 0.15;
   }
 }
 
@@ -94,17 +79,12 @@ class AreaPowerUp extends PowerUp {
       icon: "💥",
       maxLevel: 5,
     });
-    this.baseValue = 0.15;
   }
 
   apply(player) {
-    const value = this.baseValue * this.multiplier;
-    player.areaMultiplier += value;
-    console.log(
-      `✅ Zone augmentée de +${(value * 100).toFixed(
-        0
-      )}% ! Total: ${player.areaMultiplier.toFixed(2)}x`
-    );
+    if (!player.areaBonus) player.areaBonus = 1;
+    player.areaBonus += 0.15;
+    player.areaMultiplier = player.areaBonus;
   }
 }
 
@@ -113,21 +93,15 @@ class ProjectilePowerUp extends PowerUp {
     super({
       id: "projectile",
       name: "Projectiles +",
-      description: "Ajoute des projectiles",
+      description: "Ajoute 1 projectile",
       icon: "🎯",
       maxLevel: 3,
     });
-    this.baseValue = 1; // 1 projectile de base
   }
 
   apply(player) {
-    const value = Math.floor(this.baseValue * this.multiplier);
-    player.projectileBonus += value;
-    console.log(
-      `✅ ${value} projectile(s) ajouté(s) ! Total: ${
-        player.projectileBonus + 1
-      }`
-    );
+    if (!player.projectileCount) player.projectileCount = 1;
+    player.projectileCount++;
   }
 }
 
@@ -139,18 +113,19 @@ class MaxHpPowerUp extends PowerUp {
     super({
       id: "maxhp",
       name: "Vitalité +",
-      description: "Augmente les HP max",
+      description: "Augmente les HP max de 2",
       icon: "❤️",
       maxLevel: 10,
     });
-    this.baseValue = 20;
   }
 
   apply(player) {
-    const value = Math.floor(this.baseValue * this.multiplier);
-    player.maxHp += value;
-    player.setHp(player.hp + value);
-    console.log(`✅ +${value} HP max ! Nouveau max: ${player.maxHp}`);
+    player.maxHp += 2;
+    if (player.setHp) {
+      player.setHp(player.hp + 2);
+    } else {
+      player.hp += 2;
+    }
   }
 }
 
@@ -163,16 +138,15 @@ class HealPowerUp extends PowerUp {
       icon: "💚",
       maxLevel: 1,
     });
-    this.baseValue = 0.5;
   }
 
   apply(player) {
-    const healPercent = this.baseValue * this.multiplier;
-    const healAmount = Math.floor(player.maxHp * healPercent);
-    player.setHp(player.hp + healAmount);
-    console.log(
-      `✅ Soigné de ${healAmount} HP (${(healPercent * 100).toFixed(0)}%) !`
-    );
+    const healAmount = Math.floor(player.maxHp * 0.5);
+    if (player.setHp) {
+      player.setHp(player.hp + healAmount);
+    } else {
+      player.hp = Math.min(player.hp + healAmount, player.maxHp);
+    }
   }
 }
 
@@ -181,19 +155,22 @@ class RegenPowerUp extends PowerUp {
     super({
       id: "regen",
       name: "Régénération",
-      description: "Régénère des HP/sec",
+      description: "Régénère 1 HP/5s",
       icon: "💖",
       maxLevel: 5,
     });
-    this.baseValue = 1;
   }
 
   apply(player) {
-    const value = Math.floor(this.baseValue * this.multiplier);
-    player.hpRegen += value;
-    console.log(
-      `✅ Régénération +${value} HP/sec ! Total: ${player.hpRegen} HP/sec`
-    );
+    if (!player.hasRegen) {
+      player.hasRegen = true;
+      player.regenTimer = 0;
+      player.regenRate = 5.0;
+      player.regenAmount = 1;
+    } else {
+      player.regenRate = Math.max(1.0, player.regenRate - 0.5);
+      player.regenAmount++;
+    }
   }
 }
 
@@ -206,20 +183,16 @@ class SpeedPowerUp extends PowerUp {
       id: "speed",
       name: "Vitesse +",
       description: "Augmente la vitesse de 10%",
-      icon: "💨",
+      icon: "🚀",
       maxLevel: 5,
     });
-    this.baseValue = 0.1;
   }
 
   apply(player) {
-    const value = this.baseValue * this.multiplier;
-    player.speed *= 1 + value;
-    console.log(
-      `✅ Vitesse +${(value * 100).toFixed(
-        0
-      )}% ! Nouvelle vitesse: ${player.speed.toFixed(0)}`
-    );
+    if (!player.speedBonus) player.speedBonus = 1;
+    player.speedBonus += 0.1;
+    const baseSpeed = 150;
+    player.speed = baseSpeed * player.speedBonus;
   }
 }
 
@@ -232,17 +205,12 @@ class XpBoostPowerUp extends PowerUp {
       icon: "⭐",
       maxLevel: 4,
     });
-    this.baseValue = 0.25;
   }
 
   apply(player) {
-    const value = this.baseValue * this.multiplier;
-    player.xpMultiplier += value;
-    console.log(
-      `✅ XP boost +${(value * 100).toFixed(
-        0
-      )}% ! Total: ${player.xpMultiplier.toFixed(2)}x`
-    );
+    if (!player.xpBonus) player.xpBonus = 1;
+    player.xpBonus += 0.25;
+    player.xpMultiplier = player.xpBonus;
   }
 }
 
@@ -255,20 +223,78 @@ class MagnetPowerUp extends PowerUp {
       icon: "🧲",
       maxLevel: 3,
     });
-    this.baseValue = 50;
   }
 
   apply(player) {
-    const value = Math.floor(this.baseValue * this.multiplier);
-    player.magnetRange += value;
-    console.log(
-      `✅ Rayon magnétique +${value}px ! Total: ${player.magnetRange}px`
-    );
+    if (!player.magnetRange) player.magnetRange = 0;
+    player.magnetRange += 50;
+  }
+}
+
+class LuckPowerUp extends PowerUp {
+  constructor() {
+    super({
+      id: "luck",
+      name: "Chance",
+      description: "Augmente la chance de drop de +20%",
+      icon: "🍀",
+      maxLevel: 5,
+    });
+  }
+
+  apply(player) {
+    if (!player.luckBonus) player.luckBonus = 1;
+    player.luckBonus += 0.2;
+    player.luckMultiplier = player.luckBonus;
+  }
+}
+
+class RicochetPowerUp extends PowerUp {
+  constructor() {
+    super({
+      id: "ricochet",
+      name: "Ricochet",
+      description: "Les projectiles rebondissent +1 fois",
+      icon: "🔄",
+      maxLevel: 3,
+    });
+  }
+
+  apply(player) {
+    if (!player.ricochetCount) player.ricochetCount = 0;
+    player.ricochetCount += 1;
+
+    // Activer le système de ricochet
+    if (!player.hasRicochet) {
+      player.hasRicochet = true;
+    }
+  }
+}
+
+class PiercePowerUp extends PowerUp {
+  constructor() {
+    super({
+      id: "pierce",
+      name: "Pénétration",
+      description: "Les projectiles traversent +1 ennemi",
+      icon: "🎯",
+      maxLevel: 5,
+    });
+  }
+
+  apply(player) {
+    if (!player.pierceCount) player.pierceCount = 0;
+    player.pierceCount += 1;
+
+    // Activer le système de pierce
+    if (!player.hasPierce) {
+      player.hasPierce = true;
+    }
   }
 }
 
 /**
- * REGISTRE DE TOUS LES POWER-UPS AVEC RARETÉ
+ * REGISTRE DE TOUS LES POWER-UPS
  */
 export default class PowerUpRegistry {
   constructor() {
@@ -292,6 +318,9 @@ export default class PowerUpRegistry {
     this.register(new SpeedPowerUp());
     this.register(new XpBoostPowerUp());
     this.register(new MagnetPowerUp());
+    this.register(new LuckPowerUp());
+    this.register(new RicochetPowerUp());
+    this.register(new PiercePowerUp());
   }
 
   register(powerUp) {
@@ -306,20 +335,13 @@ export default class PowerUpRegistry {
     return Array.from(this.powerUps.values());
   }
 
-  /**
-   * ✨ NOUVEAU : Obtenir des power-ups aléatoires AVEC RARETÉ
-   * @param {number} count - Nombre de power-ups à générer
-   * @param {Array} excludeIds - IDs à exclure
-   * @param {number} luckMultiplier - Multiplicateur de chance du joueur
-   * @returns {Array<RarePowerUp>} Power-ups avec rareté
-   */
   getRandomPowerUps(count = 3, excludeIds = [], luckMultiplier = 1.0) {
     const available = this.getAll().filter(
       (pu) => !excludeIds.includes(pu.id) && pu.canLevelUp()
     );
 
     if (available.length <= count) {
-      // Appliquer la rareté même s'il y a peu de choix
+      // Wrapper tous les power-ups disponibles avec rareté
       return available.map((pu) => {
         const rarity = rollRarity(luckMultiplier);
         return new RarePowerUp(pu, rarity);
@@ -330,38 +352,27 @@ export default class PowerUpRegistry {
     const pool = [...available];
 
     for (let i = 0; i < count; i++) {
-      // Sélectionner un power-up aléatoire
       const index = Math.floor(Math.random() * pool.length);
       const basePowerUp = pool[index];
-      pool.splice(index, 1);
-
-      // Déterminer la rareté selon la chance du joueur
       const rarity = rollRarity(luckMultiplier);
-
-      // Créer le power-up avec sa rareté
-      const rarePowerUp = new RarePowerUp(basePowerUp, rarity);
-      result.push(rarePowerUp);
-
-      // Log pour debug
-      console.log(
-        `🎲 ${rarity.icon} ${rarePowerUp.name} (${rarity.name}) - ×${rarity.multiplier}`
-      );
+      result.push(new RarePowerUp(basePowerUp, rarity));
+      pool.splice(index, 1);
     }
 
     return result;
   }
 
-  /**
-   * Debug : Afficher les probabilités actuelles
-   * @param {number} luckMultiplier - Chance du joueur
-   */
-  debugRates(luckMultiplier = 1.0) {
-    debugDropRates(luckMultiplier);
-  }
-
   getByCategory(category) {
     const categories = {
-      offensive: ["damage", "cooldown", "area", "projectile"],
+      offensive: [
+        "damage",
+        "cooldown",
+        "area",
+        "projectile",
+        "luck",
+        "ricochet",
+        "pierce",
+      ],
       defensive: ["maxhp", "heal", "regen"],
       utility: ["speed", "xpboost", "magnet"],
     };
