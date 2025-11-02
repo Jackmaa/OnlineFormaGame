@@ -19,7 +19,7 @@ export default class Player {
     this.hp = this.maxHp;
     this.speed = charData.stats.speed;
 
-    // Multipliers
+    // ✅ Multiplicateurs (initialisés depuis le personnage)
     this.damageMultiplier = charData.stats.damageMultiplier || 1.0;
     this.cooldownMultiplier = charData.stats.cooldownMultiplier || 1.0;
     this.xpMultiplier = charData.stats.xpMultiplier || 1.0;
@@ -28,7 +28,7 @@ export default class Player {
     this.bossDamageMultiplier = charData.stats.bossDamageMultiplier || 1.0;
     this.growthRate = charData.stats.growthRate || 1.0;
 
-    // Special stats
+    // ✅ Special stats
     this.projectileBonus = charData.stats.projectileBonus || 0;
     this.hpRegen = charData.stats.hpRegen || 0;
     this.magnetRange = charData.stats.magnetRange || 50;
@@ -40,7 +40,7 @@ export default class Player {
     this.xpForNextLevel = 20;
     this.level = 1;
 
-    // Equipped weapons (now multiple)
+    // ✅ Equipped weapons (now multiple)
     this.weapons = [];
 
     // Old attack system (deprecated but kept for compatibility)
@@ -56,9 +56,12 @@ export default class Player {
     // Direction
     this.lastDir = { x: 1, y: 0 };
 
-    // Invincibility frames
+    // ✅ Invincibility frames
     this.invincible = false;
     this.invincibleTimer = 0;
+
+    // ✅ Regen timer
+    this.regenTimer = 0;
 
     // UI callbacks
     this.onHpChange = null;
@@ -126,12 +129,16 @@ export default class Player {
   }
 
   update(dt, input) {
-    // HP Regeneration
+    // ✅ HP Regeneration
     if (this.hpRegen > 0) {
-      this.setHp(this.hp + this.hpRegen * dt);
+      this.regenTimer += dt;
+      if (this.regenTimer >= 1.0) {
+        this.setHp(this.hp + this.hpRegen);
+        this.regenTimer = 0;
+      }
     }
 
-    // Invincibility timer
+    // ✅ Invincibility timer
     if (this.invincible) {
       this.invincibleTimer -= dt;
       if (this.invincibleTimer <= 0) {
@@ -205,7 +212,7 @@ export default class Player {
       w.y = cy + Math.sin(baseAng) * total - w.height / 2;
     }
 
-    // Update all weapons
+    // ✅ Update all weapons
     for (const weapon of this.weapons) {
       weapon.update(dt);
     }
@@ -235,7 +242,7 @@ export default class Player {
       ctx.restore();
     }
 
-    // Render all weapons
+    // ✅ Render all weapons
     for (const weapon of this.weapons) {
       weapon.render(ctx);
     }

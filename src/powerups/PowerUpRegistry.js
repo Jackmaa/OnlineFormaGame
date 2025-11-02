@@ -1,6 +1,4 @@
 // src/powerups/PowerUpRegistry.js
-// VERSION AUTONOME - TOUT EN UN SEUL FICHIER
-// Aucun import externe nécessaire
 
 /**
  * Classe de base pour tous les power-ups
@@ -48,9 +46,13 @@ class DamagePowerUp extends PowerUp {
   }
 
   apply(player) {
-    if (!player.damageBonus) player.damageBonus = 1;
-    player.damageBonus += 0.2;
-    player.damageMultiplier = player.damageBonus;
+    // ✅ CORRIGÉ : Augmente directement damageMultiplier
+    player.damageMultiplier += 0.2;
+    console.log(
+      `✅ Dégâts augmentés ! Multiplicateur : ${player.damageMultiplier.toFixed(
+        2
+      )}`
+    );
   }
 }
 
@@ -66,8 +68,13 @@ class CooldownPowerUp extends PowerUp {
   }
 
   apply(player) {
-    if (!player.cooldownBonus) player.cooldownBonus = 0;
-    player.cooldownBonus += 0.15;
+    // ✅ CORRIGÉ : Réduit cooldownMultiplier (0.85 = -15%)
+    player.cooldownMultiplier *= 0.85;
+    console.log(
+      `✅ Cooldown réduit ! Multiplicateur : ${player.cooldownMultiplier.toFixed(
+        2
+      )}`
+    );
   }
 }
 
@@ -83,9 +90,11 @@ class AreaPowerUp extends PowerUp {
   }
 
   apply(player) {
-    if (!player.areaBonus) player.areaBonus = 1;
-    player.areaBonus += 0.15;
-    player.areaMultiplier = player.areaBonus;
+    // ✅ CORRIGÉ : Augmente directement areaMultiplier
+    player.areaMultiplier += 0.15;
+    console.log(
+      `✅ Zone augmentée ! Multiplicateur : ${player.areaMultiplier.toFixed(2)}`
+    );
   }
 }
 
@@ -101,8 +110,9 @@ class ProjectilePowerUp extends PowerUp {
   }
 
   apply(player) {
-    if (!player.projectileCount) player.projectileCount = 1;
-    player.projectileCount++;
+    // ✅ CORRIGÉ : Augmente projectileBonus (pas projectileCount)
+    player.projectileBonus += 1;
+    console.log(`✅ Projectile ajouté ! Total : ${player.projectileBonus + 1}`);
   }
 }
 
@@ -114,19 +124,16 @@ class MaxHpPowerUp extends PowerUp {
     super({
       id: "maxhp",
       name: "Vitalité +",
-      description: "Augmente les HP max de 2",
+      description: "Augmente les HP max de 20",
       icon: "❤️",
       maxLevel: 10,
     });
   }
 
   apply(player) {
-    player.maxHp += 2;
-    if (player.setHp) {
-      player.setHp(player.hp + 2);
-    } else {
-      player.hp += 2;
-    }
+    player.maxHp += 20;
+    player.setHp(player.hp + 20);
+    console.log(`✅ HP max augmentés ! Nouveau max : ${player.maxHp}`);
   }
 }
 
@@ -143,11 +150,8 @@ class HealPowerUp extends PowerUp {
 
   apply(player) {
     const healAmount = Math.floor(player.maxHp * 0.5);
-    if (player.setHp) {
-      player.setHp(player.hp + healAmount);
-    } else {
-      player.hp = Math.min(player.hp + healAmount, player.maxHp);
-    }
+    player.setHp(player.hp + healAmount);
+    console.log(`✅ Soigné de ${healAmount} HP !`);
   }
 }
 
@@ -156,22 +160,15 @@ class RegenPowerUp extends PowerUp {
     super({
       id: "regen",
       name: "Régénération",
-      description: "Régénère 1 HP/5s",
+      description: "Régénère 1 HP/sec",
       icon: "💖",
       maxLevel: 5,
     });
   }
 
   apply(player) {
-    if (!player.hasRegen) {
-      player.hasRegen = true;
-      player.regenTimer = 0;
-      player.regenRate = 5.0;
-      player.regenAmount = 1;
-    } else {
-      player.regenRate = Math.max(1.0, player.regenRate - 0.5);
-      player.regenAmount++;
-    }
+    player.hpRegen += 1;
+    console.log(`✅ Régénération augmentée ! ${player.hpRegen} HP/sec`);
   }
 }
 
@@ -190,10 +187,11 @@ class SpeedPowerUp extends PowerUp {
   }
 
   apply(player) {
-    if (!player.speedBonus) player.speedBonus = 1;
-    player.speedBonus += 0.1;
-    const baseSpeed = 150;
-    player.speed = baseSpeed * player.speedBonus;
+    // ✅ CORRIGÉ : Augmente speed directement
+    player.speed *= 1.1;
+    console.log(
+      `✅ Vitesse augmentée ! Nouvelle vitesse : ${player.speed.toFixed(0)}`
+    );
   }
 }
 
@@ -209,9 +207,11 @@ class XpBoostPowerUp extends PowerUp {
   }
 
   apply(player) {
-    if (!player.xpBonus) player.xpBonus = 1;
-    player.xpBonus += 0.25;
-    player.xpMultiplier = player.xpBonus;
+    // ✅ CORRIGÉ : Augmente xpMultiplier
+    player.xpMultiplier += 0.25;
+    console.log(
+      `✅ XP boost ! Multiplicateur : ${player.xpMultiplier.toFixed(2)}`
+    );
   }
 }
 
@@ -227,8 +227,10 @@ class MagnetPowerUp extends PowerUp {
   }
 
   apply(player) {
-    if (!player.magnetRange) player.magnetRange = 0;
     player.magnetRange += 50;
+    console.log(
+      `✅ Rayon magnétique augmenté ! Portée : ${player.magnetRange}px`
+    );
   }
 }
 
