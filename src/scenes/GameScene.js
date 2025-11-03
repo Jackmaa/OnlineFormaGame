@@ -1,4 +1,6 @@
-// src/scenes/GameScene.js
+// src/scenes/GameScene.js - VERSION AMÉLIORÉE
+// Intégration du WeaponDropSystem amélioré
+
 import Player from "../entities/Player.js";
 import Bug from "../entities/Bug.js";
 import TileMap from "../engine/TileMap.js";
@@ -13,6 +15,7 @@ import ProjectileWeapon from "../weapons/ProjectileWeapon.js";
 import GuidedMissile from "../weapons/GuidedMissile.js";
 import LaserWeapon from "../weapons/LaserWeapon.js";
 import LevelUpSystem from "../systems/LevelUpSystem.js";
+import WeaponDropSystem from "../systems/WeaponDropSystem.js";
 import { getCharacter } from "../data/Characters.js";
 
 export default class GameScene {
@@ -25,10 +28,11 @@ export default class GameScene {
     this.player = null;
     this.waveManager = null;
     this.xpGems = [];
-    this.weaponDrops = []; // ✅ Armes légendaires droppées
-    this.dropEffects = []; // ✅ Effets visuels de drop
+    this.weaponDrops = [];
+    this.dropEffects = [];
     this.UI = null;
     this.levelUpSystem = null;
+    this.weaponDropSystem = null;
     this.gameTime = 0;
     this.paused = false;
   }
@@ -62,8 +66,11 @@ export default class GameScene {
     };
 
     // Wave Manager
-    this.game.Bug = Bug; // Pass Bug class
+    this.game.Bug = Bug;
     this.waveManager = new WaveManager(this.game, assets.enemy);
+
+    // ✅ Weapon Drop System
+    this.weaponDropSystem = new WeaponDropSystem();
 
     // XP Gem sprite
     this.xpSprite = assets.xpGem;
@@ -94,14 +101,14 @@ export default class GameScene {
       originalHide();
       this.paused = false;
     };
+
+    // ✅ Debug: Afficher les drop rates au démarrage
+    console.log(`\n🎮 ${this.player.characterName} commence la partie !`);
+    this.weaponDropSystem.debugDropRates(this.player.luckMultiplier || 1.0);
   }
 
   /**
    * Crée une arme en fonction de son type
-   * @param {string} weaponType - Type d'arme (sword, orbital, projectile)
-   * @param {Player} player - Joueur
-   * @param {Image} sprite - Sprite de l'arme
-   * @returns {BaseWeapon} L'arme créée
    */
   createWeapon(weaponType, player, sprite) {
     switch (weaponType) {
@@ -127,7 +134,7 @@ export default class GameScene {
     if (this.paused) return;
 
     this.gameTime += dt;
-    this.game.gameTime = this.gameTime; // Make available to wave manager
+    this.game.gameTime = this.gameTime;
 
     const input = this.game.input;
 
@@ -148,7 +155,7 @@ export default class GameScene {
     this.waveManager.update(dt);
     const enemies = this.waveManager.getEnemies();
 
-    // Mettre Ã  jour la liste des ennemis pour les armes (ciblage automatique)
+    // Mettre à jour la liste des ennemis pour les armes
     for (const weapon of this.player.weapons) {
       if (weapon.setEnemies) {
         weapon.setEnemies(enemies);
@@ -184,17 +191,14 @@ export default class GameScene {
       for (const hitbox of hitboxes) {
         for (const enemy of enemies) {
           if (this.checkCollision(hitbox, enemy)) {
-            // ✅ Gestion spéciale pour les lasers (ricochet)
+            // Gestion spéciale pour les lasers
             if (hitbox.laser && hitbox.laserData) {
               const laserData = hitbox.laserData;
 
-              // Vérifier si cet ennemi a déjà été touché par ce laser (ricochet)
               if (laserData.hitEnemies && laserData.hitEnemies.has(enemy)) {
-                // Déjà touché, skip
                 continue;
               }
 
-              // Appliquer les dégâts
               let damage = hitbox.damage * this.player.damageMultiplier;
 
               if (enemy.isBoss) {
@@ -207,17 +211,11 @@ export default class GameScene {
 
               enemy.hp -= damage;
 
-              // ✅ Gérer le ricochet pour le laser
               if (laserData.ricochetRemaining > 0 && this.player.hasRicochet) {
-                // Marquer l'ennemi comme touché
                 if (!laserData.hitEnemies) laserData.hitEnemies = new Set();
                 laserData.hitEnemies.add(enemy);
                 laserData.ricochetRemaining--;
-
-                // La cible sera mise à jour dans LaserWeapon.updateTargets()
-                // qui cherchera le prochain ennemi non touché
               } else {
-                // Pas de ricochet, marquer quand même pour éviter les doubles hits
                 if (!laserData.hitEnemies) laserData.hitEnemies = new Set();
                 laserData.hitEnemies.add(enemy);
               }
@@ -229,71 +227,42 @@ export default class GameScene {
             if (hitbox.projectile) {
               const proj = hitbox.projectile;
 
-              // ✅ Vérifier si CET ennemi a déjà été touché par CET projectile
-              // Chaque projectile a son propre hitEnemies Set, donc chaque projectile
-              // peut toucher indépendamment les mêmes ennemis que d'autres projectiles
               if (proj.hitEnemies && proj.hitEnemies.has(enemy)) {
-                // Cet ennemi a déjà été touché par ce projectile spécifique (via ricochet ou pierce)
-                // Skip cet ennemi pour ce projectile uniquement
                 continue;
               }
 
-              // ✅ PRIORITÉ 1 : Si ricochet restant > 0 ET hasRicochet activé pour CE projectile
-              // ProjectileWeapon.update() gère les collisions avec ricochet au début de chaque frame
-              // Si l'ennemi n'est pas encore dans hitEnemies, cela signifie que ProjectileWeapon
-              // va gérer cette collision au prochain frame (ou l'a déjà gérée cette frame)
-              // On skip ici pour laisser ProjectileWeapon.update() gérer le ricochet
-              // et éviter d'appliquer les dégâts deux fois
               if (proj.ricochetRemaining > 0 && this.player.hasRicochet) {
-                // Le ricochet sera géré dans ProjectileWeapon.update() (appelé dans player.update())
-                // Skip cette collision pour éviter les doubles dégâts
-                // Note: Chaque projectile est traité indépendamment, donc les projectiles sans
-                // ricochet (ricochetRemaining = 0) continueront normalement ci-dessous
                 continue;
               }
 
-              // Si on arrive ici, c'est que :
-              // - Cet ennemi n'a PAS été touché par ce projectile (pas dans hitEnemies)
-              // - Ce projectile n'a PAS de ricochet actif (ricochetRemaining = 0)
-              // Donc on gère normalement avec le pierce
-
-              // ✅ PRIORITÉ 2 : Si ricochet = 0 pour CE projectile, alors utiliser le pierce
-              // Appliquer les dégâts normalement
               let damage = hitbox.damage * this.player.damageMultiplier;
 
-              // Boss damage multiplier
               if (enemy.isBoss) {
                 damage *= this.player.bossDamageMultiplier;
               }
 
-              // Critical hit
               if (Math.random() < this.player.critChance) {
                 damage *= 1.5;
               }
 
               enemy.hp -= damage;
 
-              // Marquer l'ennemi comme touché par ce projectile pour éviter les doubles hits
               if (!proj.hitEnemies) proj.hitEnemies = new Set();
               proj.hitEnemies.add(enemy);
 
-              // Gérer le pierce
               if (proj.pierceRemaining > 0) {
                 proj.pierceRemaining--;
               } else {
-                // Sinon, marquer pour suppression (seulement si ricochet aussi à 0)
                 proj.toRemove = true;
               }
             } else {
-              // ✅ Pour les armes non-projectiles (épée, orbitales, etc.), appliquer les dégâts normalement
+              // Armes normales
               let damage = hitbox.damage * this.player.damageMultiplier;
 
-              // Boss damage multiplier
               if (enemy.isBoss) {
                 damage *= this.player.bossDamageMultiplier;
               }
 
-              // Critical hit
               if (Math.random() < this.player.critChance) {
                 damage *= 1.5;
               }
@@ -328,7 +297,6 @@ export default class GameScene {
       const wasCollected = gem.collected;
       gem.update(dt, this.player);
 
-      // ✅ Si une gemme vient d'être collectée cette frame, noter sa position pour le drop
       if (!wasCollected && gem.collected) {
         collectedGemsPositions.push({
           x: gem.x + gem.width / 2,
@@ -337,19 +305,16 @@ export default class GameScene {
       }
     }
 
-    // ✅ Filtrer les gemmes collectées
     this.xpGems = this.xpGems.filter((g) => !g.collected);
 
-    // ✅ Essayer de dropper une arme légendaire pour chaque gemme collectée
     for (const pos of collectedGemsPositions) {
       this.tryDropLegendaryWeapon(pos.x, pos.y);
     }
 
-    // ✅ Update weapon drops
+    // Update weapon drops
     for (const weaponDrop of this.weaponDrops) {
       const collected = weaponDrop.update(dt, this.player);
       if (collected) {
-        // Créer et équiper l'arme
         const weapon = this.createWeapon(
           weaponDrop.weaponType,
           this.player,
@@ -357,18 +322,18 @@ export default class GameScene {
         );
         this.player.addWeapon(weapon);
 
-        // ✅ Initialiser l'arme si elle a besoin de setEnemies
         const enemies = this.waveManager.getEnemies();
         if (weapon.setEnemies) {
           weapon.setEnemies(enemies);
         }
 
-        console.log(`🎁 Arme légendaire collectée: ${weaponDrop.weaponType}`);
+        // ✅ Notification améliorée
+        this.showWeaponNotification(weaponDrop);
       }
     }
     this.weaponDrops = this.weaponDrops.filter((w) => !w.collected);
 
-    // ✅ Update drop effects
+    // Update drop effects
     for (const effect of this.dropEffects) {
       effect.update(dt);
     }
@@ -393,10 +358,10 @@ export default class GameScene {
     // XP Gems
     this.xpGems.forEach((g) => g.render(ctx));
 
-    // ✅ Weapon Drops (armes légendaires)
+    // Weapon Drops
     this.weaponDrops.forEach((w) => w.render(ctx));
 
-    // ✅ Drop Effects (effets visuels)
+    // Drop Effects
     this.dropEffects.forEach((e) => e.render(ctx));
 
     // Enemies
@@ -423,6 +388,21 @@ export default class GameScene {
     // Enemy count
     ctx.font = "16px Arial";
     ctx.fillText(`Enemies: ${enemies.length}`, this.game.canvas.width / 2, 55);
+
+    // ✅ Luck indicator
+    if (this.player.luckMultiplier > 1.0) {
+      ctx.fillStyle = "#10B981";
+      ctx.font = "bold 14px Arial";
+      const bonusPercent = ((this.player.luckMultiplier - 1.0) * 100).toFixed(
+        0
+      );
+      ctx.fillText(
+        `🍀 Chance +${bonusPercent}%`,
+        this.game.canvas.width / 2,
+        80
+      );
+    }
+
     ctx.restore();
   }
 
@@ -433,7 +413,6 @@ export default class GameScene {
   }
 
   gameOver() {
-    // Create game over screen
     const overlay = document.createElement("div");
     Object.assign(overlay.style, {
       position: "absolute",
@@ -451,12 +430,25 @@ export default class GameScene {
       zIndex: 3000,
     });
 
+    // ✅ Afficher les stats de drop
+    this.weaponDropSystem.debugDropStats();
+
     overlay.innerHTML = `
       <h1 style="font-size:72px;margin:0;color:#e53e3e;">GAME OVER</h1>
       <p style="font-size:36px;margin:20px 0;">Time Survived: ${this.formatTime(
         this.gameTime
       )}</p>
       <p style="font-size:24px;opacity:0.8;">Level: ${this.player.level}</p>
+      <p style="font-size:18px;opacity:0.7;">Character: ${
+        this.player.characterName
+      }</p>
+      ${
+        this.player.luckMultiplier > 1.0
+          ? `<p style="font-size:16px;opacity:0.7;color:#10B981;">🍀 Luck: x${this.player.luckMultiplier.toFixed(
+              1
+            )}</p>`
+          : ""
+      }
       <button id="restart-btn" style="
         font-size:28px;
         padding:20px 60px;
@@ -490,44 +482,122 @@ export default class GameScene {
   }
 
   /**
-   * ✅ Essaie de dropper une arme légendaire avec 5% de chance (modifiée par luckMultiplier)
-   * @param {number} x - Position X où dropper l'arme
-   * @param {number} y - Position Y où dropper l'arme
+   * ✅ AMÉLIORÉ: Utilise le WeaponDropSystem pour les drops
    */
   tryDropLegendaryWeapon(x, y) {
-    // Chance de base : 5% (0.05)
-    const baseChance = 0.05;
-
-    // Modifier par luckMultiplier (1.0 = normal, 2.0 = double chance)
     const luckMultiplier = this.player.luckMultiplier || 1.0;
-    const finalChance = baseChance * luckMultiplier;
 
-    // Roll
-    if (Math.random() < finalChance) {
-      // Choisir aléatoirement entre les deux armes légendaires
-      const legendaryWeapons = ["laser", "guidedMissile"];
-      const randomWeapon =
-        legendaryWeapons[Math.floor(Math.random() * legendaryWeapons.length)];
+    // ✅ Utiliser le système de drop amélioré
+    const droppedWeapon = this.weaponDropSystem.tryDrop(luckMultiplier);
 
+    if (droppedWeapon) {
+      // Créer le WeaponDrop visuel
       const weaponDrop = new WeaponDrop(
         x,
         y,
-        randomWeapon,
+        droppedWeapon.type,
         this.game.assets.weapon
       );
 
+      // ✅ Ajouter les métadonnées de l'arme
+      weaponDrop.weaponData = droppedWeapon;
+
       this.weaponDrops.push(weaponDrop);
 
-      // ✅ Créer l'effet visuel de drop (explosion de particules)
+      // Effet visuel
       const dropEffect = new DropEffect(x, y);
       this.dropEffects.push(dropEffect);
-
-      console.log(
-        `✨ Arme légendaire droppée: ${randomWeapon} (Chance: ${(
-          finalChance * 100
-        ).toFixed(2)}%)`
-      );
     }
+  }
+
+  /**
+   * ✅ NOUVEAU: Notification améliorée pour les armes
+   */
+  showWeaponNotification(weaponDrop) {
+    const weaponData = weaponDrop.weaponData;
+    if (!weaponData) return;
+
+    const notification = document.createElement("div");
+
+    Object.assign(notification.style, {
+      position: "fixed",
+      top: "20%",
+      left: "50%",
+      transform: "translateX(-50%)",
+      background: `linear-gradient(135deg, ${weaponData.color}40, ${weaponData.color}80)`,
+      border: `4px solid ${weaponData.color}`,
+      borderRadius: "20px",
+      padding: "30px 50px",
+      zIndex: 9999,
+      textAlign: "center",
+      boxShadow: `0 0 60px ${weaponData.color}, 0 0 100px ${weaponData.color}80`,
+      animation: "weaponDropIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+    });
+
+    const rarityLabels = {
+      legendary: "LÉGENDAIRE",
+      epic: "ÉPIQUE",
+      rare: "RARE",
+    };
+
+    notification.innerHTML = `
+      <div style="font-size:64px;margin-bottom:15px;filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));">
+        ${weaponData.icon}
+      </div>
+      <div style="font-size:28px;font-weight:bold;color:${
+        weaponData.color
+      };text-shadow:2px 2px 4px #000;margin-bottom:10px;">
+        ${rarityLabels[weaponData.rarity]} OBTENU !
+      </div>
+      <div style="font-size:22px;color:white;text-shadow:1px 1px 2px #000;margin-bottom:8px;font-weight:bold;">
+        ${weaponData.name}
+      </div>
+      <div style="font-size:16px;color:white;opacity:0.9;text-shadow:1px 1px 2px #000;">
+        ${weaponData.description}
+      </div>
+    `;
+
+    const style = document.createElement("style");
+    style.textContent = `
+      @keyframes weaponDropIn {
+        0% { 
+          transform: translateX(-50%) translateY(-100px) scale(0.5) rotate(-10deg); 
+          opacity: 0; 
+        }
+        60% { 
+          transform: translateX(-50%) translateY(0) scale(1.1) rotate(5deg); 
+        }
+        100% { 
+          transform: translateX(-50%) translateY(0) scale(1) rotate(0deg); 
+          opacity: 1; 
+        }
+      }
+      @keyframes weaponDropOut {
+        0% { 
+          transform: translateX(-50%) translateY(0) scale(1); 
+          opacity: 1; 
+        }
+        100% { 
+          transform: translateX(-50%) translateY(-100px) scale(0.5); 
+          opacity: 0; 
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.style.animation = "weaponDropOut 0.4s ease-in forwards";
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 400);
+    }, 3000);
   }
 }
 
