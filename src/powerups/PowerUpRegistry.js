@@ -1,6 +1,5 @@
 // src/powerups/PowerUpRegistry.js
 import { RarePowerUp, rollRarity } from "./RaritySystem.js";
-
 /**
  * Classe de base pour tous les power-ups
  */
@@ -9,13 +8,13 @@ class PowerUp {
     this.id = config.id;
     this.name = config.name;
     this.description = config.description;
-    this.icon = config.icon || "â­";
+    this.icon = config.icon || "⭐";
     this.maxLevel = config.maxLevel || 5;
     this.currentLevel = 0;
   }
 
   apply(player) {
-    throw new Error("apply() doit Ãªtre implÃ©mentÃ©");
+    throw new Error("apply() doit être implémenté");
   }
 
   levelUp(player) {
@@ -59,7 +58,7 @@ class CooldownPowerUp extends PowerUp {
       id: "cooldown",
       name: "Attaque rapide",
       description: "Réduit le cooldown de 15%",
-      icon: "⏰",
+      icon: "⚡",
       maxLevel: 5,
     });
   }
@@ -95,13 +94,29 @@ class ProjectilePowerUp extends PowerUp {
       name: "Projectiles +",
       description: "Ajoute 1 projectile",
       icon: "🎯",
-      maxLevel: 10,
+      maxLevel: 3,
     });
   }
 
   apply(player) {
     if (!player.projectileBonus) player.projectileBonus = 0;
     player.projectileBonus += 1;
+  }
+}
+
+class CriticalPowerUp extends PowerUp {
+  constructor() {
+    super({
+      id: "critical",
+      name: "Coups critiques",
+      description: "Augmente les critiques de 10%",
+      icon: "💢",
+      maxLevel: 5,
+    });
+  }
+
+  apply(player) {
+    player.critChance = (player.critChance || 0) + 0.1;
   }
 }
 
@@ -113,18 +128,18 @@ class MaxHpPowerUp extends PowerUp {
     super({
       id: "maxhp",
       name: "Vitalité +",
-      description: "Augmente les HP max de 2",
+      description: "Augmente les HP max de 20",
       icon: "❤️",
       maxLevel: 10,
     });
   }
 
   apply(player) {
-    player.maxHp += 2;
+    player.maxHp += 20;
     if (player.setHp) {
-      player.setHp(player.hp + 2);
+      player.setHp(player.hp + 20);
     } else {
-      player.hp += 2;
+      player.hp += 20;
     }
   }
 }
@@ -174,6 +189,22 @@ class RegenPowerUp extends PowerUp {
   }
 }
 
+class ArmorPowerUp extends PowerUp {
+  constructor() {
+    super({
+      id: "armor",
+      name: "Armure",
+      description: "Réduit les dégâts de 10%",
+      icon: "🛡️",
+      maxLevel: 5,
+    });
+  }
+
+  apply(player) {
+    player.damageReduction = (player.damageReduction || 0) + 0.1;
+  }
+}
+
 /**
  * POWER-UPS UTILITAIRES
  */
@@ -183,7 +214,7 @@ class SpeedPowerUp extends PowerUp {
       id: "speed",
       name: "Vitesse +",
       description: "Augmente la vitesse de 10%",
-      icon: "🚀",
+      icon: "💨",
       maxLevel: 5,
     });
   }
@@ -191,7 +222,7 @@ class SpeedPowerUp extends PowerUp {
   apply(player) {
     if (!player.speedBonus) player.speedBonus = 1;
     player.speedBonus += 0.1;
-    const baseSpeed = 150;
+    const baseSpeed = player.characterStats?.speed || 150;
     player.speed = baseSpeed * player.speedBonus;
   }
 }
@@ -226,8 +257,62 @@ class MagnetPowerUp extends PowerUp {
   }
 
   apply(player) {
-    if (!player.magnetRange) player.magnetRange = 0;
+    if (!player.magnetRange) player.magnetRange = 50;
     player.magnetRange += 50;
+  }
+}
+
+/**
+ * POWER-UPS LÉGENDAIRES
+ */
+class VampirismPowerUp extends PowerUp {
+  constructor() {
+    super({
+      id: "vampirism",
+      name: "Vampirisme",
+      description: "Vol de vie : 5% des dégâts",
+      icon: "🩸",
+      maxLevel: 3,
+    });
+  }
+
+  apply(player) {
+    player.lifesteal = (player.lifesteal || 0) + 0.05;
+  }
+}
+
+class BerserkPowerUp extends PowerUp {
+  constructor() {
+    super({
+      id: "berserk",
+      name: "Rage du Berserker",
+      description: "+50% dégâts, -20% HP max",
+      icon: "😈",
+      maxLevel: 2,
+    });
+  }
+
+  apply(player) {
+    player.damageMultiplier *= 1.5;
+    player.maxHp = Math.floor(player.maxHp * 0.8);
+    player.hp = Math.min(player.hp, player.maxHp);
+  }
+}
+
+class TimeWarpPowerUp extends PowerUp {
+  constructor() {
+    super({
+      id: "timewarp",
+      name: "Distorsion temporelle",
+      description: "Tout va 30% plus vite",
+      icon: "⏰",
+      maxLevel: 2,
+    });
+  }
+
+  apply(player) {
+    player.cooldownMultiplier *= 0.7;
+    player.speed *= 1.3;
   }
 }
 
@@ -308,19 +393,23 @@ export default class PowerUpRegistry {
     this.register(new CooldownPowerUp());
     this.register(new AreaPowerUp());
     this.register(new ProjectilePowerUp());
+    this.register(new CriticalPowerUp());
 
     // Défensifs
     this.register(new MaxHpPowerUp());
     this.register(new HealPowerUp());
     this.register(new RegenPowerUp());
+    this.register(new ArmorPowerUp());
 
     // Utilitaires
     this.register(new SpeedPowerUp());
     this.register(new XpBoostPowerUp());
     this.register(new MagnetPowerUp());
-    this.register(new LuckPowerUp());
-    this.register(new RicochetPowerUp());
-    this.register(new PiercePowerUp());
+
+    // Légendaires
+    this.register(new VampirismPowerUp());
+    this.register(new BerserkPowerUp());
+    this.register(new TimeWarpPowerUp());
   }
 
   register(powerUp) {
@@ -372,9 +461,11 @@ export default class PowerUpRegistry {
         "luck",
         "ricochet",
         "pierce",
+        "critical",
+        "berserk",
       ],
-      defensive: ["maxhp", "heal", "regen"],
-      utility: ["speed", "xpboost", "magnet"],
+      defensive: ["maxhp", "heal", "regen", "armor", "vampirism"],
+      utility: ["speed", "xpboost", "magnet", "timewarp"],
     };
 
     const ids = categories[category] || [];
