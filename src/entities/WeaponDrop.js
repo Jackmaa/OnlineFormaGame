@@ -48,7 +48,7 @@ export default class WeaponDrop {
       this.collected = true;
       return true; // Indique qu'une arme a été collectée
     }
-    
+
     return false;
   }
 
@@ -57,10 +57,10 @@ export default class WeaponDrop {
 
     ctx.save();
     ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
-    
+
     // Rotation
     ctx.rotate(this.rotation);
-    
+
     // Pulse effect (lueur légendaire)
     const pulse = 1 + Math.sin(this.pulsePhase) * 0.15;
     const w = this.width * pulse;
@@ -69,7 +69,7 @@ export default class WeaponDrop {
     // Lueur orange (légendaire)
     ctx.shadowColor = "#F59E0B";
     ctx.shadowBlur = 20;
-    
+
     // Cercle de fond orange
     ctx.fillStyle = "rgba(245, 158, 11, 0.3)";
     ctx.beginPath();
@@ -78,13 +78,7 @@ export default class WeaponDrop {
 
     // Dessiner le sprite ou un symbole
     if (this.sprite) {
-      ctx.drawImage(
-        this.sprite,
-        -w / 2,
-        -h / 2,
-        w,
-        h
-      );
+      ctx.drawImage(this.sprite, -w / 2, -h / 2, w, h);
     } else {
       // Fallback : dessiner un symbole d'arme
       ctx.fillStyle = "#F59E0B";
@@ -105,4 +99,3 @@ export default class WeaponDrop {
     ctx.restore();
   }
 }
-
